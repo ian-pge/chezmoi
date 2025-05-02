@@ -1,0 +1,14 @@
+# Fisher bootstrap (only if missing) ---------------------------------------------------
+if not type -q fisher
+    curl -sL https://git.io/fisher | source ; and fisher install jorgebucaran/fisher  # :contentReference[oaicite:9]{index=9}
+end
+
+# Ensure bass plugin is present --------------------------------------------------------
+if not fisher list | grep -q "edc/bass"
+    fisher install edc/bass              # bass enables Bash-style env helpers :contentReference[oaicite:10]{index=10}
+end
+
+# Initialise Starship prompt -----------------------------------------------------------
+if test -e (command -v starship)
+    starship init fish | source          # official hook :contentReference[oaicite:11]{index=11}
+end
