@@ -10,4 +10,4 @@ export PATH="$HOME/.local/bin:$PATH"
 
 chezmoi init https://github.com/ian-pge/chezmoi.git
 
-chezmoi init
+chezmoi apply
