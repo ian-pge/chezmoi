@@ -22,12 +22,5 @@ fish -c '
   if not fisher list | grep -q "edc/bass"
       fisher install edc/bass                   
   end
-
-  if type -q starship
-      starship init fish | source              
-      if functions -q enable_transience
-          enable_transience                    
-      end
-  end
 '
 
