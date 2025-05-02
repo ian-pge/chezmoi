@@ -11,6 +11,10 @@ curl -sS https://starship.rs/install.sh | sh -s -- -y
 
 sudo chsh -s /bin/fish "$(whoami)"
 
+sudo mkdir -p /run/user/1000
+sudo chown zed:zed /run/user/1000
+sudo chmod 700 /run/user/1000
+
 fish -c '
   set -e
 
