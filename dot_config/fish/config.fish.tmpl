@@ -1,14 +1,26 @@
-# Fisher bootstrap (only if missing) ---------------------------------------------------
+# Fisher bootstrap ─────────────────────────────────────────────────────────────
 if not type -q fisher
-    curl -sL https://git.io/fisher | source ; and fisher install jorgebucaran/fisher  # :contentReference[oaicite:9]{index=9}
+    curl -sL https://git.io/fisher | source ; and fisher install jorgebucaran/fisher  # Fisher PM :contentReference[oaicite:0]{index=0}
 end
 
-# Ensure bass plugin is present --------------------------------------------------------
+# Ensure Bass (Bash-env bridge) is present
 if not fisher list | grep -q "edc/bass"
-    fisher install edc/bass              # bass enables Bash-style env helpers :contentReference[oaicite:10]{index=10}
+    fisher install edc/bass          # Bass plugin :contentReference[oaicite:1]{index=1}
 end
 
-# Initialise Starship prompt -----------------------------------------------------------
-if test -e (command -v starship)
-    starship init fish | source          # official hook :contentReference[oaicite:11]{index=11}
+# Initialise Starship and enable transient prompts ----------------------------
+if type -q starship
+    starship init fish | source
+    enable_transience ^/dev/null     # Fish‐only helper :contentReference[oaicite:2]{index=2}
 end
+
+# Transient prompt content: only show the time of last command
+function starship_transient_prompt_func
+    starship module time             # Module call from docs :contentReference[oaicite:3]{index=3}
+end
+
+# Give us a blank line after each command when the prompt re-appears
+function prompt_newline --on-event fish_postexec
+    echo
+end
+
