@@ -11,3 +11,23 @@ curl -sS https://starship.rs/install.sh | sh -s -- -y
 
 sudo chsh -s /bin/fish "$(whoami)"
 
+fish -c '
+  set -e
+
+  if not type -q fisher
+      curl -sL https://git.io/fisher | source
+      fisher install jorgebucaran/fisher           
+  end
+
+  if not fisher list | grep -q "edc/bass"
+      fisher install edc/bass                   
+  end
+
+  if type -q starship
+      starship init fish | source              
+      if functions -q enable_transience
+          enable_transience                    
+      end
+  end
+'
+
