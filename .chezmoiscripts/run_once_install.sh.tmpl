@@ -1,21 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- Detect Ubuntu and install fish -------------------------------------------------
-if [[ "$(lsb_release -is)" == "Ubuntu" ]]; then
-  sudo apt-get update
-  # Add/refresh the official fish PPA (latest 3.x)                                   #
-  sudo apt-add-repository -y ppa:fish-shell/release-3      # ← fish 3.x PPA :contentReference[oaicite:6]{index=6}
-  sudo apt-get update
-  sudo apt-get install -y fish
-fi
+sudo apt-get update
+sudo apt-get install software-properties-common -y                            
+sudo apt-add-repository -y ppa:fish-shell/release-3     
+sudo apt-get update
+sudo apt-get install -y fish
 
-# --- Install starship ----------------------------------------------------------------
-if ! command -v starship >/dev/null 2>&1; then
-  curl -sS https://starship.rs/install.sh | sh -s -- -y    # vendor installer :contentReference[oaicite:7]{index=7}
-fi
+curl -sS https://starship.rs/install.sh | sh -s -- -y    
 
-# --- Set fish as default shell --------------------------------------------------------
-if [[ "$SHELL" != *fish ]]; then
-  chsh -s "$(command -v fish)"
-fi
+sudo chsh -s "$(command -v fish)"
+
