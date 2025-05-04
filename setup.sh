@@ -1,1 +1,1 @@
-sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" chezmoi init --source "$PWD" --apply
+sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" init --source "$PWD" --apply
