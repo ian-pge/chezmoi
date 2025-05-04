@@ -10,19 +10,15 @@ sudo apt-get install -y fish
 curl -sS https://starship.rs/install.sh | sh -s -- -y    
 
 sudo echo /usr/bin/fish | sudo tee -a /etc/shells
-sudo chsh -s /bin/fish zed
+sudo chsh -s /bin/fish $(whoami)
 
 fish -c '
   set -e
 
-  if not type -q fisher
-      curl -sL https://git.io/fisher | source
-      fisher install jorgebucaran/fisher           
-  end
+  curl -sL https://git.io/fisher | source
+  fisher install jorgebucaran/fisher           
 
-  if not fisher list | grep -q "edc/bass"
-      fisher install edc/bass
-      fisher install catppuccin/fish
-  end
+  fisher install edc/bass
+  fisher install catppuccin/fish
 '
 
