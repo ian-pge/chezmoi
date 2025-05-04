@@ -11,3 +11,6 @@ export PATH="$HOME/.local/bin:$PATH"
 chezmoi init https://github.com/ian-pge/chezmoi.git
 
 chezmoi apply
+
+
+sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin" init --apply https://github.com/ian-pge/chezmoi.git
