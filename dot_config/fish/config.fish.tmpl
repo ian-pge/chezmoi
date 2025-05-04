@@ -1,29 +1,16 @@
-# Bootstrap Fisher if missing ---------------------------------------------
-if not type -q fisher
-    curl -sL https://git.io/fisher | source
-    fisher install jorgebucaran/fisher
-end
-
-# Ensure Bass is installed --------------------------------------------------
-if not fisher list | grep -q "edc/bass"
-    fisher install edc/bass
-end
-
-# Starship & transient prompt ----------------------------------------------
 if type -q starship
     starship init fish | source
     enable_transience
 end
 
-# Replace collapsed prompt with current time --------------------------------
 function starship_transient_prompt_func
     starship module time
 end
 
-# Add blank line between commands ------------------------------------------
 function prompt_newline --on-event fish_postexec
     echo
 end
 
 set fish_greeting
 fish_vi_key_bindings
+fish_config theme save "Catppuccin Macchiato"
