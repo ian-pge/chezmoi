@@ -22,13 +22,4 @@ sudo apt install helix
 sudo echo /usr/bin/fish | sudo tee -a /etc/shells
 sudo chsh -s /bin/fish $(whoami)
 
-fish -c '
-  set -e
-
-  curl -sL https://git.io/fisher | source
-  fisher install jorgebucaran/fisher           
-
-  fisher install edc/bass
-  fisher install catppuccin/fish
-'
 
