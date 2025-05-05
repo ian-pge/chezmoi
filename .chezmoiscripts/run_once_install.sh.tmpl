@@ -9,7 +9,7 @@ sudo apt-get install -y fish
 
 sudo apt-get install -y wl-clipboard
 
-sudo apt-get install -y locales && sudo locale-gen
+sudo apt-get install -y locales && sed -i 's/^# *en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen && sudo locale-gen
 
 curl -sS https://starship.rs/install.sh | sh -s -- -y    
 
