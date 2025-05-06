@@ -1,27 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Add required repositories
 sudo apt-get update
-sudo apt-get install software-properties-common -y                            
-sudo apt-add-repository -y ppa:fish-shell/release-3     
+sudo apt-get install -y software-properties-common
+sudo add-apt-repository -y ppa:fish-shell/release-3
+sudo add-apt-repository -y ppa:neovim-ppa/stable
 sudo apt-get update
-sudo apt-get install -y fish
 
-sudo apt-get install -y neovim
+# Install packages in one command
+sudo apt-get install -y \
+  fish \
+  neovim \
+  wl-clipboard \
+  locales
 
-sudo apt-get install -y wl-clipboard
-
-sudo apt-get install -y locales
+# Configure locale
 sudo sed -i 's/^# *en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen
 sudo locale-gen
 
-curl -sS https://starship.rs/install.sh | sh -s -- -y   
+# Install Starship
+curl -sS https://starship.rs/install.sh | sh -s -- -y
 
-sudo add-apt-repository ppa:maveonair/helix-editor
-sudo apt update
-sudo apt install helix
-
+# Set Fish as the default shell
 sudo echo /usr/bin/fish | sudo tee -a /etc/shells
-sudo chsh -s /bin/fish $(whoami)
+sudo chsh -s /usr/bin/fish $(whoami)
 
 
