@@ -1,4 +1,5 @@
 vim.opt.number = true
+vim.opt.shortmess:append("I")
 
 -- Bootstrap lazy.nvim if not already installed
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
