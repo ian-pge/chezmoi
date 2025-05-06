@@ -2,18 +2,23 @@
 set -euo pipefail
 
 CHEZ="$HOME/.local/bin/chezmoi"
-SRC="$HOME/.local/share/chezmoi"   # chezmoi’s managed repo
+SRC="$HOME/.local/share/chezmoi"
+REPO="https://github.com/ian-pge/chezmoi.git"   # <— your dot‑files repo
 
-# 1. Make sure the CLI is present (harmless if it’s already installed)
+# 1. Ensure chezmoi CLI exists
 if [[ ! -x $CHEZ ]]; then
   sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
 fi
 
-# 2. First‑run bootstrap vs. subsequent update
+# 2. First run: clone from remote; later runs: pull+apply
 if [[ ! -d $SRC ]]; then
-  # DevPod just cloned your dotfiles into $PWD; initialise from there
-  "$CHEZ" init --source="$PWD" --apply      # one‑time bootstrap
+  # one‑time bootstrap straight from GitHub (remote is set automatically)
+  "$CHEZ" init --apply "$REPO"                # --apply does the first apply
 else
-  # The repo already exists => just pull & apply new commits
-  "$CHEZ" update -v                         # git pull + apply in one step
+  # make sure there's an origin (handles the earlier local‑path case)
+  if ! git -C "$SRC" remote get-url origin >/dev/null 2>&1; then
+    git -C "$SRC" remote add origin "$REPO"
+  fi
+  # fetch & apply any new commits; falls back to plain apply if pull fails
+  "$CHEZ" update -v || "$CHEZ" apply -v
 fi
