@@ -2,23 +2,23 @@
 set -euo pipefail
 
 CHEZ="$HOME/.local/bin/chezmoi"
-SRC="$HOME/.local/share/chezmoi"
-REPO="https://github.com/ian-pge/chezmoi.git"   # <— your dot‑files repo
+DOTFILES_DIR="$HOME/dotfiles"           # DevPod clones here
+SRC="$HOME/.local/share/chezmoi"        # chezmoi’s own repo
+REMOTE_URL="https://github.com/ian-pge/chezmoi.git"  # <— your repo URL
 
-# 1. Ensure chezmoi CLI exists
-if [[ ! -x $CHEZ ]]; then
-  sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
-fi
+# 1 · Ensure the CLI is present (harmless if already installed)
+[[ -x $CHEZ ]] || sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$HOME/.local/bin"
 
-# 2. First run: clone from remote; later runs: pull+apply
+# 2 · Bootstrap once, then update on every later start
 if [[ ! -d $SRC ]]; then
-  # one‑time bootstrap straight from GitHub (remote is set automatically)
-  "$CHEZ" init --apply "$REPO"                # --apply does the first apply
+  # First container start: seed chezmoi from the freshly‑cloned repo
+  "$CHEZ" init --source="$DOTFILES_DIR" --apply          # applies immediately :contentReference[oaicite:2]{index=2}
 else
-  # make sure there's an origin (handles the earlier local‑path case)
+  # Make sure there *is* a remote; add one if the first run used a local path
   if ! git -C "$SRC" remote get-url origin >/dev/null 2>&1; then
-    git -C "$SRC" remote add origin "$REPO"
+    git -C "$SRC" remote add origin "$REMOTE_URL"        # any valid Git URL works :contentReference[oaicite:3]{index=3}
   fi
-  # fetch & apply any new commits; falls back to plain apply if pull fails
-  "$CHEZ" update -v || "$CHEZ" apply -v
+  # Pull and apply new commits (falls back to plain apply if pull fails)
+  "$CHEZ" update -v || "$CHEZ" apply -v                  # update = pull + apply :contentReference[oaicite:4]{index=4}
 fi
+
