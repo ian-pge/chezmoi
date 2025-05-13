@@ -14,10 +14,6 @@ starship init fish | source
 
 enable_transience
 
-set -gx COLORTERM truecolor
-
-fish_config theme choose "Catppuccin Macchiato"
-
 function starship_transient_prompt_func
     starship module time
 end
@@ -25,6 +21,10 @@ end
 function prompt_newline --on-event fish_postexec
     echo
 end
+
+set -gx COLORTERM truecolor
+
+fish_config theme choose "Catppuccin Macchiato"
 
 fish_add_path ~/.local/bin
 
