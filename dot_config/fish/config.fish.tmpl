@@ -1,5 +1,7 @@
 set fish_greeting
 
+set -gx COLORTERM truecolor
+
 fish_vi_key_bindings
 set -g fish_cursor_default block
 set -g fish_cursor_insert  line
@@ -21,10 +23,6 @@ end
 function prompt_newline --on-event fish_postexec
     echo
 end
-
-set -gx COLORTERM truecolor
-
-fish_config theme choose "Catppuccin Macchiato"
 
 fish_add_path ~/.local/bin
 
