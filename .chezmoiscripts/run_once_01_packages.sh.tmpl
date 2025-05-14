@@ -2,37 +2,38 @@
 set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
-export TZ='Europe/Paris'
+TZ="Europe/Paris"
 
-# Add required repositories
-sudo apt-get update
-sudo apt-get install -y software-properties-common
+# --- Time-zone & locale preset ----
+sudo ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
+echo "$TZ" | sudo tee /etc/timezone
+
+echo 'locales locales/default_environment_locale select en_US.UTF-8' | sudo debconf-set-selections
+echo 'locales locales/locales_to_be_generated select en_US.UTF-8 UTF-8' | sudo debconf-set-selections
+
+# --- Repositories ----------------------------------------------------------
+sudo apt-get update -qq
+sudo apt-get install -y --no-install-recommends software-properties-common tzdata locales
 sudo add-apt-repository -y ppa:fish-shell/release-4
 sudo add-apt-repository -y ppa:neovim-ppa/unstable
-sudo apt-get update
+sudo apt-get update -qq
 
-# Install packages
-sudo apt-get install -y \
-  fish \
-  neovim \
-  locales \
-  fzf \
-  fd-find \
-  bat
-
-
-# Force tzdata reconfiguration in noninteractive mode
-sudo dpkg-reconfigure --frontend=noninteractive tzdata
-
-# Configure locale
-sudo sed -i 's/^# *en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen
+# --- Packages --------------------------------------------------------------
+sudo apt-get install -y --no-install-recommends \
+    fish neovim fzf fd-find bat
 sudo locale-gen
 
-# Install Starship
-curl -sS https://starship.rs/install.sh | sh -s -- -y -b ~/.local/bin
+# --- Starship prompt -------------------------------------------------------
+curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b ~/.local/bin
 
-# Set Fish as the default shell
-sudo echo /usr/bin/fish | sudo tee -a /etc/shells
-sudo chsh -s /usr/bin/fish $(whoami)
+# --- Fish as default shell -------------------------------------------------
+if ! grep -q '^/usr/bin/fish$' /etc/shells; then
+  echo /usr/bin/fish | sudo tee -a /etc/shells
+fi
+sudo chsh -s /usr/bin/fish "$(whoami)"
+
+# --- Clean up --------------------------------------------------------------
+sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/*
+
 
 
