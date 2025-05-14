@@ -20,6 +20,10 @@ sudo apt-get install -y \
   fd-find \
   bat
 
+
+# Force tzdata reconfiguration in noninteractive mode
+sudo dpkg-reconfigure --frontend=noninteractive tzdata
+
 # Configure locale
 sudo sed -i 's/^# *en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen
 sudo locale-gen
