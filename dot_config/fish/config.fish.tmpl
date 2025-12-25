@@ -1,3 +1,5 @@
+fish_add_path ~/.local/bin
+
 set fish_greeting
 
 set -gx COLORTERM truecolor
@@ -14,18 +16,6 @@ bind -M visual y fish_clipboard_copy
 
 starship init fish | source
 
-enable_transience
-
-function starship_transient_prompt_func
-    starship module time
-end
-
 function prompt_newline --on-event fish_postexec
     echo
 end
-
-fish_add_path ~/.local/bin
-
-
-
-
