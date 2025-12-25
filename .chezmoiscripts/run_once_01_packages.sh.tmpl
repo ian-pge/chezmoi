@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# You can set the timezone in your chezmoi config:
+# [data]
+#   timezone = "America/New_York"
 export DEBIAN_FRONTEND=noninteractive
-TZ="Europe/Paris"
+TZ={{ .timezone | default "Europe/Paris" }}
 
 # --- Time-zone & locale preset ----
 sudo ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
@@ -14,14 +17,25 @@ echo 'locales locales/locales_to_be_generated select en_US.UTF-8 UTF-8' | sudo d
 # --- Repositories ----------------------------------------------------------
 sudo apt-get update -qq
 sudo apt-get install -y --no-install-recommends software-properties-common tzdata locales
-sudo add-apt-repository -y ppa:fish-shell/release-4
+{{ if eq .chezmoi.osRelease.id "ubuntu" -}}
+sudo add-apt-repository -y ppa:fish-shell/release-3
 sudo add-apt-repository -y ppa:neovim-ppa/unstable
+{{ end -}}
 sudo apt-get update -qq
 
 # --- Packages --------------------------------------------------------------
+# On recent versions of Ubuntu (22.04+), the fd-find package is named fd.
+# You may need to create a `~/.local/bin/fd` symlink to `fdfind` if you use Ubuntu < 22.04
 sudo apt-get install -y --no-install-recommends \
     fish neovim fzf fd-find bat
 sudo locale-gen
+
+# --- bat symlink -----------------------------------------------------------
+if ! command -v bat &> /dev/null && command -v batcat &> /dev/null; then
+    mkdir -p ~/.local/bin
+    ln -sf /usr/bin/batcat ~/.local/bin/bat
+fi
+
 
 # --- Starship prompt -------------------------------------------------------
 curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b ~/.local/bin
@@ -33,7 +47,4 @@ fi
 sudo chsh -s /usr/bin/fish "$(whoami)"
 
 # --- Clean up --------------------------------------------------------------
-sudo apt-get clean && sudo rm -rf /var/lib/apt/lists/*
-
-
-
+sudo apt-get clean && rm -rf /var/lib/apt/lists/*
