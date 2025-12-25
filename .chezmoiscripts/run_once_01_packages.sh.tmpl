@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# You can set the timezone in your chezmoi config:
-# [data]
-#   timezone = "America/New_York"
 export DEBIAN_FRONTEND=noninteractive
-TZ={{ .timezone | default "Europe/Paris" }}
+# You can set the timezone here.
+# Find your timezone from this list: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+TZ="Europe/Paris"
 
 # --- Time-zone & locale preset ----
 sudo ln -fs /usr/share/zoneinfo/$TZ /etc/localtime
