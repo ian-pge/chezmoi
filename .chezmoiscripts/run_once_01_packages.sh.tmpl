@@ -26,6 +26,7 @@ sudo apt-get update -qq
 # On recent versions of Ubuntu (22.04+), the fd-find package is named fd.
 # You may need to create a `~/.local/bin/fd` symlink to `fdfind` if you use Ubuntu < 22.04
 sudo apt-get install -y --no-install-recommends \
+    curl sudo git python3-apt \
     fish neovim fzf fd-find bat
 sudo locale-gen
 
