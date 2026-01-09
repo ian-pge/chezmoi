@@ -1,13 +1,20 @@
 #!/usr/bin/env fish
 
-if not functions -q fisher
-    # Install fisher if not already installed
-    curl -sL https://git.io/fisher | source
+if not type -q curl
+    echo "curl is not installed. Skipping fisher installation."
+    exit 1
 end
 
-fisher install jorgebucaran/fisher
+if not functions -q fisher
+    # Install fisher if not already installed
+    echo "Installing fisher..."
+    curl -sL https://git.io/fisher | source && fisher install jorgebucaran/fisher
+end
+
+# Install plugins quietly if possible or just standard install
 fisher install edc/bass
 fisher install catppuccin/fish
 
 # Set Catppuccin Macchiato as the default theme
-yes | fish_config theme save "Catppuccin Macchiato"
+# Use a valid theme name or ensure it's available
+echo "y" | fish_config theme save "Catppuccin Macchiato" 2>/dev/null || true
