@@ -34,13 +34,13 @@ ensure_basic_deps() {
     fi
 
     # Check for core dependencies before running updates
-    if ! command -v curl >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1; then
+    if ! command -v curl >/dev/null 2>&1 || ! command -v tar >/dev/null 2>&1; then
          run_apt update -qq -y
          run_apt install -y -qq --no-install-recommends \
             -o Dpkg::Options::="--force-confnew" \
             -o Dpkg::Options::="--force-confdef" \
             ca-certificates curl gnupg tzdata locales tar sudo
-            # unzip often useful for manual installs, but tar is essential
+            # gnupg needed for apt key verification sometimes, sudo for priv escal
     fi
 
     # Ensure locales are generated to avoid perl warnings

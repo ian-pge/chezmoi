@@ -5,7 +5,7 @@ set -e
 export PATH="$HOME/.pixi/bin:$PATH"
 
 if ! command -v fish >/dev/null 2>&1; then
-  echo "Error: flsh not found in $PATH"
+  echo "Error: fish not found in $PATH"
   exit 1
 fi
 
@@ -22,5 +22,5 @@ fisher install edc/bass
 fisher install catppuccin/fish
 
 # Use a valid theme name or ensure it's available
-echo "y" | fish_config theme save "Catppuccin Macchiato" 2/dev/null || true
+echo "y" | fish_config theme save "Catppuccin Macchiato" 2>/dev/null || true
 EOF
