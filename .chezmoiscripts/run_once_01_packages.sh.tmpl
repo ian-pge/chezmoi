@@ -88,15 +88,16 @@ install_tool git
 # Add pixi to path in case it wasn't picked up immediately for this shell session
 export PATH="$HOME/.pixi/bin:$PATH"
 
-# Fish as default shell (best-effort)
+# Configured Shell
+# We do NOT automatically change the shell to fish using chsh because it can break 
+# container startup sequences if the path is dynamic or requires env vars.
+# Users should configure their terminal or devcontainer.json to use fish.
+
 if command -v fish >/dev/null 2>&1; then
   if ! grep -q "^$(command -v fish)$" /etc/shells; then
     echo "$(command -v fish)" | $SUDO tee -a /etc/shells >/dev/null
   fi
-  
-  if [[ -w /etc/passwd ]] || command -v chsh >/dev/null 2>&1; then
-      $SUDO chsh -s "$(command -v fish)" "$(whoami)" 2>/dev/null || true
-  fi
+  # Skipped chsh for stability
 fi
 
 # Cleanup system apt cache to keep image small (if we used apt)
@@ -104,3 +105,4 @@ if [[ -d /var/lib/apt/lists ]]; then
     run_apt clean
     $SUDO rm -rf /var/lib/apt/lists/*
 fi
+
