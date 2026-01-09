@@ -89,15 +89,27 @@ install_tool git
 export PATH="$HOME/.pixi/bin:$PATH"
 
 # Configured Shell
-# We do NOT automatically change the shell to fish using chsh because it can break 
-# container startup sequences if the path is dynamic or requires env vars.
-# Users should configure their terminal or devcontainer.json to use fish.
+# To safely use a user-installed shell as default, we symlink it to a standard system path.
+# This ensures it is available during login even if ~/.pixi/bin isn't in the initial PATH.
 
-if command -v fish >/dev/null 2>&1; then
-  if ! grep -q "^$(command -v fish)$" /etc/shells; then
-    echo "$(command -v fish)" | $SUDO tee -a /etc/shells >/dev/null
+FISH_BIN="$HOME/.pixi/bin/fish"
+SYSTEM_FISH="/usr/local/bin/fish"
+
+if [[ -x "$FISH_BIN" ]]; then
+  # Create a system-wide symlink if possible
+  if [[ ! -e "$SYSTEM_FISH" ]]; then
+      $SUDO ln -sf "$FISH_BIN" "$SYSTEM_FISH"
   fi
-  # Skipped chsh for stability
+
+  # Add to /etc/shells if missing
+  if ! grep -q "^$SYSTEM_FISH$" /etc/shells; then
+    echo "$SYSTEM_FISH" | $SUDO tee -a /etc/shells >/dev/null
+  fi
+  
+  # Change default shell
+  if [[ -w /etc/passwd ]] || command -v chsh >/dev/null 2>&1; then
+      $SUDO chsh -s "$SYSTEM_FISH" "$(whoami)" 2>/dev/null || true
+  fi
 fi
 
 # Cleanup system apt cache to keep image small (if we used apt)
