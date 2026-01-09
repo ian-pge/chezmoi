@@ -4,6 +4,8 @@ set -euo pipefail
 # Export for current shell
 export DEBIAN_FRONTEND=noninteractive
 export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
+# Pixi needs ~/.local/bin in PATH usually, ensuring it receives it
+export PATH="$HOME/.local/bin:$HOME/.pixi/bin:$PATH"
 TZ="${TZ:-Europe/Paris}"
 
 # Use sudo only when needed/available
@@ -23,127 +25,82 @@ run_apt() {
 }
 
 # Ensure basic tools for script execution
-# Some minimal images lack curl or output to stderr which we want to control
+# Minimal set needed for Pixi and basic shell setup
 ensure_basic_deps() {
     # Pre-seed timezone to avoid tzdata prompt
-    # We try to create /etc/timezone if we can write to it (root or via sudo)
     echo "$TZ" | $SUDO tee /etc/timezone >/dev/null || true
-    # If zoneinfo exists, link it now
     if [[ -f "/usr/share/zoneinfo/$TZ" ]]; then
         $SUDO ln -fs "/usr/share/zoneinfo/$TZ" /etc/localtime
     fi
 
-    run_apt update -qq -y
-    run_apt install -y -qq --no-install-recommends \
-        -o Dpkg::Options::="--force-confnew" \
-        -o Dpkg::Options::="--force-confdef" \
-        ca-certificates curl gnupg software-properties-common tzdata locales python3-apt unzip
-}
+    # Check for core dependencies before running updates
+    if ! command -v curl >/dev/null 2>&1 || ! command -v python3 >/dev/null 2>&1; then
+         run_apt update -qq -y
+         run_apt install -y -qq --no-install-recommends \
+            -o Dpkg::Options::="--force-confnew" \
+            -o Dpkg::Options::="--force-confdef" \
+            ca-certificates curl gnupg timezone locales tar sudo
+            # unzip often useful for manual installs, but tar is essential
+    fi
 
-if ! command -v apt-get >/dev/null 2>&1; then
-  echo "ERROR: This script currently supports apt-based containers only (Debian/Ubuntu)." >&2
-  exit 1
-fi
+    # Ensure locales are generated to avoid perl warnings
+    if command -v locale-gen >/dev/null 2>&1; then
+        echo 'locales locales/default_environment_locale select en_US.UTF-8' | $SUDO debconf-set-selections
+        echo 'locales locales/locales_to_be_generated select en_US.UTF-8 UTF-8' | $SUDO debconf-set-selections
+        $SUDO locale-gen en_US.UTF-8 >/dev/null 2>&1 || true
+    fi
+}
 
 ensure_basic_deps
 
-# ---- Fix add-apt-repository / apt_pkg mismatch (common in conda-based images or older distros) ----
-fix_add_apt_repository() {
-  command -v add-apt-repository >/dev/null 2>&1 || return 0
+# ---- Install Pixi ----
+if ! command -v pixi >/dev/null 2>&1; then
+    echo "Installing Pixi..."
+    curl -fsSL https://pixi.sh/install.sh | bash
+fi
 
-  # Check if it works out of the box
-  if /usr/bin/python3 -c 'import apt_pkg' >/dev/null 2>&1; then
-    return 0
-  fi
+# ---- Install Tools via Pixi ----
+# Global install provides binaries in ~/.pixi/bin
+# We specific versions if critical, but generic install implies latest stable at time of run
+# Pixi is fast and resolves deps without system interference
 
-  # Find which Python ABI the installed apt_pkg module is built for.
-  local so tag pyver
-  so="$(ls /usr/lib/python3/dist-packages/apt_pkg*.so 2>/dev/null | head -n 1 || true)"
-  
-  if [[ -z "$so" ]]; then
-     run_apt install -y --reinstall python3-apt
-     so="$(ls /usr/lib/python3/dist-packages/apt_pkg*.so 2>/dev/null | head -n 1 || true)"
-  fi
-
-  if [[ "$so" =~ cpython-([0-9]{2,3}) ]]; then
-    tag="${BASH_REMATCH[1]}"          # e.g. 310, 38
-    pyver="${tag:0:1}.${tag:1}"       # -> 3.10, 3.8
-
-    if [[ -x "/usr/bin/python${pyver}" ]]; then
-      $SUDO ln -sf "/usr/bin/python${pyver}" /usr/bin/python3
+install_tool() {
+    local tool="$1"
+    local package="${2:-$1}" # Package name can differ from tool name
+    
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "Installing $tool via pixi..."
+        pixi global install "$package"
     fi
+}
+
+install_tool neovim nvim
+install_tool fish
+install_tool bat
+install_tool fd fd-find
+install_tool fzf
+install_tool starship
+install_tool neofetch
+install_tool git
+
+# ---- Configure Shell ----
+
+# Add pixi to path in case it wasn't picked up immediately for this shell session
+export PATH="$HOME/.pixi/bin:$PATH"
+
+# Fish as default shell (best-effort)
+if command -v fish >/dev/null 2>&1; then
+  if ! grep -q "^$(command -v fish)$" /etc/shells; then
+    echo "$(command -v fish)" | $SUDO tee -a /etc/shells >/dev/null
   fi
   
-  # Final check, if it fails we just warn but don't exit, as some PPAs might just be skipped
-   if ! /usr/bin/python3 -c 'import apt_pkg' >/dev/null 2>&1; then
-     echo "WARNING: apt_pkg mismatch typical in some containers. add-apt-repository might fail." >&2
-   fi
-}
-fix_add_apt_repository || true
-
-# ---- Timezone & locale preset ----
-# (Redundant check but harmless if already set in ensure_basic_deps)
-if [[ -f "/usr/share/zoneinfo/$TZ" ]]; then
-    $SUDO ln -fs "/usr/share/zoneinfo/$TZ" /etc/localtime
-    echo "$TZ" | $SUDO tee /etc/timezone >/dev/null
-fi
-
-# Generate locales without interaction
-if command -v locale-gen >/dev/null 2>&1; then
-    echo 'locales locales/default_environment_locale select en_US.UTF-8' | $SUDO debconf-set-selections
-    echo 'locales locales/locales_to_be_generated select en_US.UTF-8 UTF-8' | $SUDO debconf-set-selections
-    $SUDO locale-gen en_US.UTF-8 >/dev/null 2>&1 || true
-    $SUDO update-locale LANG=en_US.UTF-8 >/dev/null 2>&1 || true
-fi
-
-# ---- Repositories (Ubuntu-only PPAs; skip on non-Ubuntu or Debian) ----
-DIST_ID=""
-if [[ -r /etc/os-release ]]; then
-  . /etc/os-release
-  DIST_ID="${ID:-}"
-fi
-
-# Robust PPA addition
-if [[ "$DIST_ID" == "ubuntu" ]] && command -v add-apt-repository >/dev/null 2>&1; then
-  # If PPAs fail (network/minimal images), don't hard-fail your whole bootstrap.
-  $SUDO add-apt-repository -y ppa:fish-shell/release-3 || true
-  $SUDO add-apt-repository -y ppa:neovim-ppa/unstable || true
-  run_apt update -qq -y || true
-fi
-
-# ---- Packages ----
-run_apt install -y -qq --no-install-recommends \
-  -o Dpkg::Options::="--force-confnew" \
-  -o Dpkg::Options::="--force-confdef" \
-  git fish neovim fzf fd-find bat neofetch
-
-# ---- fd / bat symlinks (Debian/Ubuntu naming quirks) ----
-mkdir -p ~/.local/bin
-
-if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
-  ln -sf "$(command -v fdfind)" ~/.local/bin/fd
-fi
-
-if ! command -v bat >/dev/null 2>&1 && command -v batcat >/dev/null 2>&1; then
-  ln -sf "$(command -v batcat)" ~/.local/bin/bat
-fi
-
-# ---- Starship prompt ----
-if ! command -v starship >/dev/null 2>&1; then
-    curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b ~/.local/bin >/dev/null 2>&1 || echo "Starship install failed, skipping"
-fi
-
-# ---- Fish as default shell (best-effort in containers) ----
-if command -v fish >/dev/null 2>&1; then
-  if ! grep -q '^/usr/bin/fish$' /etc/shells; then
-    echo /usr/bin/fish | $SUDO tee -a /etc/shells >/dev/null
-  fi
-  # change shell only if acceptable
   if [[ -w /etc/passwd ]] || command -v chsh >/dev/null 2>&1; then
-      $SUDO chsh -s /usr/bin/fish "$(whoami)" 2>/dev/null || true
+      $SUDO chsh -s "$(command -v fish)" "$(whoami)" 2>/dev/null || true
   fi
 fi
 
-# ---- Clean up ----
-run_apt clean
-$SUDO rm -rf /var/lib/apt/lists/*
+# Cleanup system apt cache to keep image small (if we used apt)
+if [[ -d /var/lib/apt/lists ]]; then
+    run_apt clean
+    $SUDO rm -rf /var/lib/apt/lists/*
+fi

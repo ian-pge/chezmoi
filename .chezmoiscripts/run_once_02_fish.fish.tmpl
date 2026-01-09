@@ -1,8 +1,8 @@
 #!/usr/bin/env fish
 
-if not type -q curl
-    echo "curl is not installed. Skipping fisher installation."
-    exit 1
+# Ensure Pixi bin is in path for this session if not already
+if test -d ~/.pixi/bin
+    fish_add_path ~/.pixi/bin
 end
 
 if not functions -q fisher
@@ -15,6 +15,5 @@ end
 fisher install edc/bass
 fisher install catppuccin/fish
 
-# Set Catppuccin Macchiato as the default theme
 # Use a valid theme name or ensure it's available
 echo "y" | fish_config theme save "Catppuccin Macchiato" 2>/dev/null || true
