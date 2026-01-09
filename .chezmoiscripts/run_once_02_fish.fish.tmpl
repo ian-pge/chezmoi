@@ -1,10 +1,16 @@
-#!/usr/bin/env fish
+#!/bin/bash
+set -e
 
-# Ensure Pixi bin is in path for this session if not already
-if test -d ~/.pixi/bin
-    fish_add_path ~/.pixi/bin
-end
+# Ensure Pixi bin is in path
+export PATH="$HOME/.pixi/bin:$PATH"
 
+if ! command -v fish >/dev/null 2>&1; then
+  echo "Error: flsh not found in $PATH"
+  exit 1
+fi
+
+# Exec into fish to run the configuration
+exec fish <<'EOF'
 if not functions -q fisher
     # Install fisher if not already installed
     echo "Installing fisher..."
@@ -16,4 +22,5 @@ fisher install edc/bass
 fisher install catppuccin/fish
 
 # Use a valid theme name or ensure it's available
-echo "y" | fish_config theme save "Catppuccin Macchiato" 2>/dev/null || true
+echo "y" | fish_config theme save "Catppuccin Macchiato" 2/dev/null || true
+EOF
