@@ -21,7 +21,7 @@ fi
 
 # Wrapper to run apt commands non-interactively even with sudo
 run_apt() {
-    $SUDO DEBIAN_FRONTEND=noninteractive apt-get "$@"
+  $SUDO env DEBIAN_FRONTEND=noninteractive apt-get "$@"
 }
 
 # Ensure basic tools for script execution
@@ -67,7 +67,7 @@ fi
 install_tool() {
     local tool="$1"
     local package="${2:-$1}" # Package name can differ from tool name
-    
+
     if ! command -v "$tool" >/dev/null 2>&1; then
         echo "Installing $tool via pixi..."
         pixi global install "$package"
@@ -105,7 +105,7 @@ if [[ -x "$FISH_BIN" ]]; then
   if ! grep -q "^$SYSTEM_FISH$" /etc/shells; then
     echo "$SYSTEM_FISH" | $SUDO tee -a /etc/shells >/dev/null
   fi
-  
+
   # Change default shell
   if [[ -w /etc/passwd ]] || command -v chsh >/dev/null 2>&1; then
       $SUDO chsh -s "$SYSTEM_FISH" "$(whoami)" 2>/dev/null || true
@@ -117,4 +117,3 @@ if [[ -d /var/lib/apt/lists ]]; then
     run_apt clean
     $SUDO rm -rf /var/lib/apt/lists/*
 fi
-
