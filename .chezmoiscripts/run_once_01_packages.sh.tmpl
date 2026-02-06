@@ -82,7 +82,7 @@ install_tool fzf
 install_tool starship
 install_tool fastfetch
 install_tool git
-install_tool node nodejs
+install_tool nodejs
 
 # ---- Configure Shell ----
 
@@ -119,24 +119,22 @@ if [[ -d /var/lib/apt/lists ]]; then
     $SUDO rm -rf /var/lib/apt/lists/*
 fi
 
-# ---- Install AI CLI Tools via npm ----
-NPM_BIN="$HOME/.pixi/bin/npm"
+# ---- Install AI CLI Tools ----
+# Use a global prefix in HOME so it works without root and persists
+NPM_GLOBAL_DIR="$HOME/.npm-global"
+mkdir -p "$NPM_GLOBAL_DIR"
+npm config set prefix "$NPM_GLOBAL_DIR"
+export PATH="$NPM_GLOBAL_DIR/bin:$PATH"
 
-if [[ -x "$NPM_BIN" ]]; then
-    echo "Installing AI CLI tools via npm..."
-
-    # Claude Code (requires Node.js >= 18)
-    if ! command -v claude >/dev/null 2>&1; then
-        "$NPM_BIN" install -g @anthropic-ai/claude-code
+npm_install_tool() {
+    local cmd="$1"
+    local pkg="$2"
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Installing $pkg..."
+        npm install -g "$pkg"
     fi
+}
 
-    # Gemini CLI
-    if ! command -v gemini >/dev/null 2>&1; then
-        "$NPM_BIN" install -g @google/gemini-cli
-    fi
-
-    # OpenAI Codex CLI
-    if ! command -v codex >/dev/null 2>&1; then
-        "$NPM_BIN" install -g @openai/codex
-    fi
-fi
+npm_install_tool claude  @anthropic-ai/claude-code
+npm_install_tool gemini  @google/gemini-cli
+npm_install_tool codex   @openai/codex
