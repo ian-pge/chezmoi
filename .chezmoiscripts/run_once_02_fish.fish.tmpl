@@ -1,26 +1,29 @@
 #!/bin/bash
 set -e
-
-# Ensure Pixi bin is in path
 export PATH="$HOME/.pixi/bin:$PATH"
-
 if ! command -v fish >/dev/null 2>&1; then
   echo "Error: fish not found in $PATH"
   exit 1
 fi
 
-# Exec into fish to run the configuration
+# Persistent fish PATH config
+mkdir -p "$HOME/.config/fish"
+cat > "$HOME/.config/fish/config.fish" << 'FISHCONF'
+fish_add_path -g $HOME/.pixi/bin
+fish_add_path -g $HOME/.local/bin
+fish_add_path -g $HOME/.npm-global/bin
+
+if command -q starship
+    starship init fish | source
+end
+FISHCONF
+
 exec fish <<'EOF'
 if not functions -q fisher
-    # Install fisher if not already installed
     echo "Installing fisher..."
     curl -sL https://git.io/fisher | source && fisher install jorgebucaran/fisher
 end
-
-# Install plugins quietly if possible or just standard install
 fisher install edc/bass
 fisher install catppuccin/fish
-
-# Use a valid theme name or ensure it's available
 echo "y" | fish_config theme save "Catppuccin Macchiato" 2>/dev/null || true
 EOF
