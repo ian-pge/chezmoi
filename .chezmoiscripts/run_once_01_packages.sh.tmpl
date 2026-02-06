@@ -82,6 +82,7 @@ install_tool fzf
 install_tool starship
 install_tool fastfetch
 install_tool git
+install_tool node nodejs
 
 # ---- Configure Shell ----
 
@@ -116,4 +117,26 @@ fi
 if [[ -d /var/lib/apt/lists ]]; then
     run_apt clean
     $SUDO rm -rf /var/lib/apt/lists/*
+fi
+
+# ---- Install AI CLI Tools via npm ----
+NPM_BIN="$HOME/.pixi/bin/npm"
+
+if [[ -x "$NPM_BIN" ]]; then
+    echo "Installing AI CLI tools via npm..."
+
+    # Claude Code (requires Node.js >= 18)
+    if ! command -v claude >/dev/null 2>&1; then
+        "$NPM_BIN" install -g @anthropic-ai/claude-code
+    fi
+
+    # Gemini CLI
+    if ! command -v gemini >/dev/null 2>&1; then
+        "$NPM_BIN" install -g @google/gemini-cli
+    fi
+
+    # OpenAI Codex CLI
+    if ! command -v codex >/dev/null 2>&1; then
+        "$NPM_BIN" install -g @openai/codex
+    fi
 fi
