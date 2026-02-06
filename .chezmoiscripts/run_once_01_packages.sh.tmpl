@@ -138,16 +138,3 @@ npm_install_tool() {
 npm_install_tool claude  @anthropic-ai/claude-code
 npm_install_tool gemini  @google/gemini-cli
 npm_install_tool codex   @openai/codex
-
-# ---- Configure Fish Shell Paths ----
-FISH_CONFIG_DIR="$HOME/.config/fish"
-mkdir -p "$FISH_CONFIG_DIR"
-cat > "$FISH_CONFIG_DIR/config.fish" << 'FISHEOF'
-fish_add_path -g $HOME/.pixi/bin
-fish_add_path -g $HOME/.local/bin
-fish_add_path -g $HOME/.npm-global/bin
-
-if command -q starship
-    starship init fish | source
-end
-FISHEOF
