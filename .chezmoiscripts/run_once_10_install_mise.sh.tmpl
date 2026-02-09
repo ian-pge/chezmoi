@@ -22,4 +22,10 @@ echo ">>> Installing tools via Mise..."
 
 mise install --yes
 
+echo ">>> Verifying installation..."
+if ! ~/.local/bin/mise exec -- starship --version >/dev/null 2>&1; then
+    echo "WARNING: Starship not found after mise install. Retrying..."
+    mise install starship --yes
+fi
+
 echo ">>> Mise tools installed."
