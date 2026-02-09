@@ -1,0 +1,21 @@
+#!/usr/bin/env fish
+
+# ---- 1. Install Fisher (Plugin Manager) ----
+# We check if 'fisher' is defined as a function. If not, we install it.
+if not functions -q fisher
+    echo "Installing fisher..."
+    curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
+    fisher install jorgebucaran/fisher
+end
+
+# ---- 2. Install Plugins ----
+# bass: Utility to use Bash scripts in Fish
+fisher install edc/bass
+
+# catppuccin: Theme for Fish
+fisher install catppuccin/fish
+
+# Apply the theme (silencing output)
+echo "y" | fish_config theme save "Catppuccin Macchiato" 2>/dev/null; or true
+
+echo ">>> Fish plugins installed."

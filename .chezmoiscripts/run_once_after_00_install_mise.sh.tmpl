@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ---- 1. Install Mise (The Tool Manager) ----
+# We need to install the actual binary first!
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+
+if ! command -v mise >/dev/null 2>&1; then
+    echo ">>> Installing Mise..."
+    curl -fsSL https://mise.run | sh
+fi
+
+# Use mise env (not mise activate) — activate is for interactive shells only
+eval "$(mise env -s bash 2>/dev/null || true)"
+
+# ---- 2. Install Tools (Declarative) ----
+echo ">>> Installing tools via Mise (from config.toml)..."
+
+# This relies on ~/.config/mise/config.toml being present
+# (which chezmoi should have managed by now)
+
+mise install --yes
+
+# Ensure all shims (executable wrappers) are up to date
+echo ">>> Reshimming mise..."
+mise reshim
+
+echo ">>> Mise tools installed successfully."

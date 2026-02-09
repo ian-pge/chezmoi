@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Privilege helper
+as_root() {
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+    else
+        echo "ERROR: Not root and 'sudo' is not installed." >&2
+        exit 1
+    fi
+}
+
+# ---- 1. Configure Default Shell (Fish) ----
+SYSTEM_FISH=$(command -v fish)
+
+# Ensure Fish is allowed in /etc/shells
+if ! grep -qxF "$SYSTEM_FISH" /etc/shells 2>/dev/null; then
+    echo ">>> Adding fish to /etc/shells..."
+    echo "$SYSTEM_FISH" | as_root tee -a /etc/shells >/dev/null
+fi
+
+# Set Fish as the default shell for the current user
+CURRENT_SHELL=$(getent passwd "$(whoami)" | cut -d: -f7)
+if [ "$CURRENT_SHELL" != "$SYSTEM_FISH" ]; then
+    echo ">>> Changing default shell to Fish..."
+    as_root chsh -s "$SYSTEM_FISH" "$(whoami)" 2>/dev/null \
+        || echo "WARNING: chsh failed — you may need to update /etc/passwd manually."
+fi
+
+echo ">>> Shell configuration complete."
