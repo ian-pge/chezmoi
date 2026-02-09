@@ -6,6 +6,15 @@ set -euo pipefail
 # Use mise env (not mise activate) — activate is for interactive shells only
 eval "$(mise env -s bash 2>/dev/null || true)"
 
+# ---- 1. Install Mise (The Tool Manager) ----
+# We need to install the actual binary first!
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+
+if ! command -v mise >/dev/null 2>&1; then
+    echo ">>> Installing Mise..."
+    curl -fsSL https://mise.run | sh
+fi
+
 # ---- 2. Install Tools (Neovim, Node, Starship, etc.) ----
 echo ">>> Installing tools via Mise..."
 

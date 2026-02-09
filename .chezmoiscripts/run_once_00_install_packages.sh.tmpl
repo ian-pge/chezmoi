@@ -5,8 +5,8 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 export TZ="${TZ:-Europe/Paris}"
-export LANG=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
+# Note: We do NOT export LANG/LC_ALL here yet.
+# We must generate the locales first to avoid Perl warnings during apt-get.
 
 # Privilege helper — runs commands as root, using sudo if not already root.
 as_root() {
@@ -38,6 +38,10 @@ if [ -f /etc/locale.gen ]; then
         as_root locale-gen en_US.UTF-8
     fi
 fi
+
+# Only now is it safe to export the locale
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 
 # ---- 3. Configure Repositories (Fish Shell) ----
 # We check if repositories are already added to avoid redundant and slow
