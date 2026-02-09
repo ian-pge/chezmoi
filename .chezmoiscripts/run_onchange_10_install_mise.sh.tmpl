@@ -30,11 +30,10 @@ TOOLS=(
     "opencode@latest"
 )
 
-# Install each tool globally
-for tool in "${TOOLS[@]}"; do
-    echo ">>> Installing $tool..."
-    mise use --global "$tool"
-done
+# Install all tools globally in parallel
+# Passing all arguments at once allows mise to download and install them concurrently.
+echo ">>> Installing tools in parallel..."
+mise use --global --yes "${TOOLS[@]}"
 
 # Ensure all shims (executable wrappers) are up to date
 echo ">>> Reshimming mise..."
