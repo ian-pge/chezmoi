@@ -1,23 +1,19 @@
 #!/usr/bin/env bash
+# config.toml hash: {{ include "dot_config/mise/config.toml.tmpl" | sha256sum }}
+
 set -euo pipefail
-
-# ---- Install Mise ----
-mkdir -p "$HOME/.local/bin"
-export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
-
-if ! command -v mise >/dev/null 2>&1; then
-    echo ">>> Installing Mise..."
-    curl -fsSL https://mise.run | sh
-    # We can't really hash -r here effectively for the parent shell, but it helps this script
-    hash -r
-fi
 
 # Use mise env (not mise activate) — activate is for interactive shells only
 eval "$(mise env -s bash 2>/dev/null || true)"
 
+# ---- 2. Install Tools (Neovim, Node, Starship, etc.) ----
+echo ">>> Installing tools via Mise..."
 
+# NOTE: This script runs AFTER files have been updated (run_onchange_after_).
+# Therefore, ~/.config/mise/config.toml already exists and has the correct content.
+# We don't need to manually create it.
 
-# Install all tools defined in the config above
+# Install all tools defined in ~/.config/mise/config.toml
 mise install --yes
 
 echo ">>> Verifying installation..."
