@@ -28,4 +28,10 @@ if ! ~/.local/bin/mise exec -- starship --version >/dev/null 2>&1; then
     mise install starship --yes
 fi
 
+echo ">>> Reshimming mise..."
+mise reshim
+
+echo ">>> Debug: Listing shims..."
+ls -l ~/.local/share/mise/shims || echo "WARNING: Shims directory not found!"
+
 echo ">>> Mise tools installed."
