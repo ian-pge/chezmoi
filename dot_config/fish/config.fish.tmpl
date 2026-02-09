@@ -1,11 +1,25 @@
+# ---- Environment Setup ----
+
+# 1. Mise Shims (Explicit)
+# We add this explicitly to ensure tools (nvim, node, starship) are found
+# immediately, even if the mise shell hook (conf.d/mise.fish) hasn't passed variables yet.
 fish_add_path ~/.local/share/mise/shims
+
+# 2. User Binaries
 fish_add_path ~/.local/bin
+
+# 3. Pixi (Conda-style package manager)
 fish_add_path ~/.pixi/bin
 
+# ---- Shell Configuration ----
+
+# Disable the default greeting ("Welcome to fish...")
 set fish_greeting
 
+# Enable truecolor support for better terminal colors
 set -gx COLORTERM truecolor
 
+# Vim keybindings emulation
 fish_vi_key_bindings
 set -g fish_cursor_default block
 set -g fish_cursor_insert  line
@@ -13,9 +27,15 @@ set -g fish_cursor_visual block
 set -g fish_cursor_replace_one underscore
 set -g fish_vi_force_cursor 1
 
+# Clipboard integration for Vim mode (yy to copy)
 bind yy fish_clipboard_copy
 bind -M visual y fish_clipboard_copy
 
+# ---- Prompt (Starship) ----
+
+# Initialize Starship only if:
+# 1. We are in an interactive session (status is-interactive) - speeds up scripts/scp.
+# 2. The 'starship' binary is found in PATH (type -q starship).
 if status is-interactive && type -q starship
     starship init fish | source
     enable_transience

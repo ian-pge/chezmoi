@@ -15,10 +15,12 @@ fi
 # Use mise env (not mise activate) — activate is for interactive shells only
 eval "$(mise env -s bash 2>/dev/null || true)"
 
-# ---- Install Tools via Mise ----
+# ---- 2. Install Tools (Neovim, Node, Starship, etc.) ----
 echo ">>> Installing tools via Mise..."
 
-# Explicitly ensure config exists for bootstrap
+# CRITICAL: Create the config file explicitly before installing.
+# This ensures 'mise install' knows WHAT to install (neovim, node, etc.)
+# during the bootstrap process, even if chezmoi hasn't fully applied the dotfiles yet.
 mkdir -p "$HOME/.config/mise"
 cat > "$HOME/.config/mise/config.toml" <<'EOF'
 [tools]
@@ -29,18 +31,19 @@ starship = "latest"
 usage    = "latest"
 EOF
 
+# Install all tools defined in the config above
 mise install --yes
 
 echo ">>> Verifying installation..."
+# Sanity check: verify 'starship' was actually installed and is runnable.
+# If verification fails, retry the install specifically for starship.
 if ! ~/.local/bin/mise exec -- starship --version >/dev/null 2>&1; then
     echo "WARNING: Starship not found after mise install. Retrying..."
     mise install starship --yes
 fi
 
+# Ensure all shims (executable wrappers) are up to date
 echo ">>> Reshimming mise..."
 mise reshim
 
-echo ">>> Debug: Listing shims..."
-ls -l ~/.local/share/mise/shims || echo "WARNING: Shims directory not found!"
-
-echo ">>> Mise tools installed."
+echo ">>> Mise tools installed successfully."

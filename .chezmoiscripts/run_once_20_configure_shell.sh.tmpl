@@ -13,24 +13,26 @@ as_root() {
     fi
 }
 
-# ---- Configure Shell (Fish) ----
+# ---- 1. Configure Default Shell (Fish) ----
 SYSTEM_FISH=$(command -v fish)
 
-# Ensure Fish is listed in /etc/shells
+# Ensure Fish is allowed in /etc/shells
 if ! grep -qxF "$SYSTEM_FISH" /etc/shells 2>/dev/null; then
     echo ">>> Adding fish to /etc/shells..."
     echo "$SYSTEM_FISH" | as_root tee -a /etc/shells >/dev/null
 fi
 
-# Set Fish as default shell (passwd package provides chsh)
+# Set Fish as the default shell for the current user
 CURRENT_SHELL=$(getent passwd "$(whoami)" | cut -d: -f7)
 if [ "$CURRENT_SHELL" != "$SYSTEM_FISH" ]; then
     echo ">>> Changing default shell to Fish..."
     as_root chsh -s "$SYSTEM_FISH" "$(whoami)" 2>/dev/null \
-        || echo "WARNING: chsh failed — update /etc/passwd manually if needed."
+        || echo "WARNING: chsh failed — you may need to update /etc/passwd manually."
 fi
 
-# ---- Hook Mise into Fish ----
+# ---- 2. Hook Mise into Fish ----
+# This creates a configuration file in Fish's conf.d directory.
+# It ensures 'mise' is initialized automatically when Fish starts.
 echo ">>> Hooking Mise into Fish..."
 mkdir -p "$HOME/.config/fish/conf.d"
 cat > "$HOME/.config/fish/conf.d/mise.fish" <<EOF

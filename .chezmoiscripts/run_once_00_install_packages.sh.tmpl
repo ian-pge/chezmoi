@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ---- 1. Environment ----
+# ---- 1. Environment & Helper Functions ----
 export DEBIAN_FRONTEND=noninteractive
 export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 export TZ="${TZ:-Europe/Paris}"
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
-# Privilege helper
+# Privilege helper — runs commands as root, using sudo if not already root.
 as_root() {
     if [ "$(id -u)" -eq 0 ]; then
         "$@"
@@ -22,12 +22,13 @@ as_root() {
 
 echo ">>> Starting Optimized Bootstrap..."
 
-# ---- 1.5 Locale Generation (Early) ----
-# Fix locale warnings during subsequent installs
+# ---- 2. Locale Generation (Prioritized) ----
+# We generate locales FIRST to prevent "perl: warning: Setting locale failed"
+# errors during the subsequent package installation steps.
 if [ -f /etc/locale.gen ]; then
     if ! grep -q "^en_US.UTF-8 UTF-8" /etc/locale.gen; then
         echo ">>> Generating locales..."
-        # Install locales package if missing (minimal images)
+        # Install 'locales' package if missing (common in minimal docker images)
         if ! dpkg -s locales >/dev/null 2>&1; then
              as_root apt-get update -qq
              as_root apt-get install -y -qq --no-install-recommends locales
@@ -38,24 +39,24 @@ if [ -f /etc/locale.gen ]; then
     fi
 fi
 
-# ---- 2. Prepare Repositories (Fish) ----
-# We do this FIRST to consolidate apt-get update/install calls.
+# ---- 3. Configure Repositories (Fish Shell) ----
+# We check if repositories are already added to avoid redundant and slow
+# 'add-apt-repository' calls.
 
 . /etc/os-release
 REPO_ADDED=0
 
 if [ "$ID" = "ubuntu" ]; then
-    # Check if PPA is already added to avoid costly add-apt-repository calls
+    # Check if PPA is already added
     if ! grep -q "^deb .*fish-shell/release-4" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null; then
         echo ">>> Adding fish-shell 4.x PPA..."
-        # We need software-properties-common for add-apt-repository
-        # This is the only unavoidable intermediate install if missing
         if ! command -v add-apt-repository >/dev/null 2>&1; then
              as_root apt-get update -qq
              as_root apt-get install -y -qq --no-install-recommends software-properties-common
         fi
         as_root add-apt-repository -y ppa:fish-shell/release-4
-        # add-apt-repository updates by default on modern Ubuntu
+        
+        # PPA addition triggers an update automatically on modern Ubuntu
         REPO_ADDED=0 
         APT_UPDATED_BY_PPA=1
     fi
@@ -78,13 +79,14 @@ elif [ "$ID" = "debian" ]; then
     fi
 fi
 
-# ---- 3. System Layer: Install All Packages ----
+# ---- 4. Install Packages (Single Pass) ----
 echo ">>> Updating apt & installing packages..."
 
-# Update if:
-# 1. We manually added a repo (Debian) -> REPO_ADDED=1
-# 2. We didn't do anything but apt lists are missing -> ! -d ...
-# 3. We didn't trigger an update via PPA -> APT_UPDATED_BY_PPA!=1
+# Update strategy:
+# - If we manually added a Debian repo (REPO_ADDED=1) -> Must update.
+# - If apt lists are missing (clean environment) -> Must update.
+# - If PPA triggered an update -> Skip (APT_UPDATED_BY_PPA=1).
+# - Otherwise -> Skip (saves time on re-runs).
 
 if [ "${APT_UPDATED_BY_PPA:-0}" != 1 ]; then
     if [ "$REPO_ADDED" -eq 1 ] || [ ! -d /var/lib/apt/lists/partial ]; then
@@ -92,12 +94,12 @@ if [ "${APT_UPDATED_BY_PPA:-0}" != 1 ]; then
     fi
 fi
 
-# Preconfigure tzdata
+# Preconfigure tzdata to avoid interactive prompts
 echo 'APT::Install-Recommends "false";' | as_root tee /etc/apt/apt.conf.d/99norecommends >/dev/null
 as_root ln -sf "/usr/share/zoneinfo/$TZ" /etc/localtime
 echo "$TZ" | as_root tee /etc/timezone >/dev/null
 
-# Single install command for everything
+# Define all packages to install
 PACKAGES=(
     ca-certificates
     curl
@@ -114,7 +116,7 @@ if [ "$ID" = "ubuntu" ]; then
     PACKAGES+=(software-properties-common)
 fi
 
+# Install everything in one command for efficiency
 as_root apt-get install -y -qq --no-install-recommends "${PACKAGES[@]}"
 
-
-echo ">>> System packages ready."
+echo ">>> System packages installed successfully."
