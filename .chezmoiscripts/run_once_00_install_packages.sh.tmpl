@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-[ "${DEBUG:-}" = 1 ] && set -x
 
 # ---- 1. Environment ----
 export DEBIAN_FRONTEND=noninteractive
@@ -9,7 +8,7 @@ export TZ="${TZ:-Europe/Paris}"
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
-# Privilege helper — works as root or with sudo
+# Privilege helper
 as_root() {
     if [ "$(id -u)" -eq 0 ]; then
         "$@"
@@ -21,83 +20,94 @@ as_root() {
     fi
 }
 
-echo ">>> Starting Bootstrap for Minimal Image..."
+echo ">>> Starting Optimized Bootstrap..."
 
-# ---- 2. System Layer: Core Dependencies ----
-echo ">>> Updating apt & installing core utils..."
-# Enforce no-recommends globally for leaner installs
+# ---- 2. Prepare Repositories (Fish) ----
+# We do this FIRST to consolidate apt-get update/install calls.
+
+. /etc/os-release
+REPO_ADDED=0
+
+if [ "$ID" = "ubuntu" ]; then
+    # Check if PPA is already added to avoid costly add-apt-repository calls
+    if ! grep -q "^deb .*fish-shell/release-4" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null; then
+        echo ">>> Adding fish-shell 4.x PPA..."
+        # We need software-properties-common for add-apt-repository
+        # This is the only unavoidable intermediate install if missing
+        if ! command -v add-apt-repository >/dev/null 2>&1; then
+             as_root apt-get update -qq
+             as_root apt-get install -y -qq --no-install-recommends software-properties-common
+        fi
+        as_root add-apt-repository -y ppa:fish-shell/release-4
+        # add-apt-repository updates by default on modern Ubuntu
+        REPO_ADDED=0 
+        APT_UPDATED_BY_PPA=1
+    fi
+elif [ "$ID" = "debian" ]; then
+    FISH_LIST="/etc/apt/sources.list.d/shells-fish-release-4.list"
+    if [ ! -f "$FISH_LIST" ]; then
+        echo ">>> Adding fish-shell 4.x OBS repo..."
+        as_root apt-get update -qq
+        as_root apt-get install -y -qq --no-install-recommends curl gnupg
+
+        REPO_URL="https://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_${VERSION_ID}/"
+        
+        curl -fsSL "${REPO_URL}Release.key" \
+            | gpg --dearmor \
+            | as_root tee /etc/apt/trusted.gpg.d/shells_fish_release_4.gpg >/dev/null
+
+        echo "deb ${REPO_URL} /" \
+            | as_root tee "$FISH_LIST" >/dev/null
+        REPO_ADDED=1
+    fi
+fi
+
+# ---- 3. System Layer: Install All Packages ----
+echo ">>> Updating apt & installing packages..."
+
+# Update if:
+# 1. We manually added a repo (Debian) -> REPO_ADDED=1
+# 2. We didn't do anything but apt lists are missing -> ! -d ...
+# 3. We didn't trigger an update via PPA -> APT_UPDATED_BY_PPA!=1
+
+if [ "${APT_UPDATED_BY_PPA:-0}" != 1 ]; then
+    if [ "$REPO_ADDED" -eq 1 ] || [ ! -d /var/lib/apt/lists/partial ]; then
+        as_root apt-get update -qq
+    fi
+fi
+
+# Preconfigure tzdata
 echo 'APT::Install-Recommends "false";' | as_root tee /etc/apt/apt.conf.d/99norecommends >/dev/null
-
-# Preconfigure tzdata so it never prompts (even if DEBIAN_FRONTEND leaks)
 as_root ln -sf "/usr/share/zoneinfo/$TZ" /etc/localtime
 echo "$TZ" | as_root tee /etc/timezone >/dev/null
 
-as_root apt-get update -qq -y
-as_root apt-get install -y -qq --no-install-recommends \
-    ca-certificates \
-    curl \
-    gnupg \
-    tzdata \
-    locales \
-    git \
-    debconf-utils \
+# Single install command for everything
+PACKAGES=(
+    ca-certificates
+    curl
+    gnupg
+    tzdata
+    locales
+    git
+    debconf-utils
     passwd
+    fish
+)
 
-# Detect distro early — Ubuntu needs software-properties-common for PPA
-. /etc/os-release
 if [ "$ID" = "ubuntu" ]; then
-    as_root apt-get install -y -qq --no-install-recommends software-properties-common
+    PACKAGES+=(software-properties-common)
 fi
 
-# ---- Fish: install latest (PPA for Ubuntu, OBS for Debian) ----
-# Default apt repos ship ancient Fish (3.3 on Ubuntu 22.04, 3.6 on Debian 12).
-# Starship needs 3.7+. Use official fish-shell repos for Fish 4.x.
-install_fish_latest() {
-    # shellcheck source=/dev/null
-    . /etc/os-release
+as_root apt-get install -y -qq --no-install-recommends "${PACKAGES[@]}"
 
-    case "$ID" in
-        ubuntu)
-            # Fish 4.x PPA — official, maintained by the fish-shell team
-            echo ">>> Adding fish-shell 4.x PPA for ${PRETTY_NAME}..."
-            as_root add-apt-repository -y ppa:fish-shell/release-4
-            ;;
-        debian)
-            # OBS repo — official, maintained by the fish-shell team
-            echo ">>> Adding fish-shell 4.x OBS repo for ${PRETTY_NAME}..."
-            local repo_url="https://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_${VERSION_ID}/"
-
-            curl -fsSL "${repo_url}Release.key" \
-                | gpg --dearmor \
-                | as_root tee /etc/apt/trusted.gpg.d/shells_fish_release_4.gpg >/dev/null
-
-            echo "deb ${repo_url} /" \
-                | as_root tee /etc/apt/sources.list.d/shells-fish-release-4.list >/dev/null
-            ;;
-        *)
-            echo "WARNING: Unsupported distro '$ID' — falling back to apt default fish."
-            ;;
-    esac
-
-    as_root apt-get update -qq -y
-    as_root apt-get install -y -qq --no-install-recommends fish
-}
-
-install_fish_latest
-
-# Rehash so newly installed binaries are found immediately
-hash -r
-
-# Quick sanity check — TLS will fail if the clock is wildly off (common in containers)
-echo ">>> System time: $(date)"
-
-# ---- 3. Locale Generation ----
-# Minimal images often ship with no locale, which breaks Fish/Nvim/etc.
+# ---- 4. Locale Generation ----
 if [ -f /etc/locale.gen ]; then
-    echo ">>> Generating locales..."
-    echo 'locales locales/default_environment_locale select en_US.UTF-8' | as_root debconf-set-selections
-    echo 'locales locales/locales_to_be_generated select en_US.UTF-8 UTF-8' | as_root debconf-set-selections
-    as_root locale-gen en_US.UTF-8
+    if ! grep -q "^en_US.UTF-8 UTF-8" /etc/locale.gen; then
+        echo ">>> Generating locales..."
+        echo 'locales locales/default_environment_locale select en_US.UTF-8' | as_root debconf-set-selections
+        echo 'locales locales/locales_to_be_generated select en_US.UTF-8 UTF-8' | as_root debconf-set-selections
+        as_root locale-gen en_US.UTF-8
+    fi
 fi
 
-echo ">>> System packages installed successfully."
+echo ">>> System packages ready."
