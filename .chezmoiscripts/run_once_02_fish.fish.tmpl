@@ -1,29 +1,36 @@
 #!/bin/bash
 set -e
-export PATH="$HOME/.pixi/bin:$PATH"
+
 if ! command -v fish >/dev/null 2>&1; then
-  echo "Error: fish not found in $PATH"
-  exit 1
+    echo "Error: fish not found in \$PATH"
+    exit 1
 fi
 
 # Persistent fish PATH config
+# Mise shims + starship are handled by conf.d/mise.fish from the bootstrap.
+# We only add paths for tools installed outside of mise here.
 mkdir -p "$HOME/.config/fish"
 cat > "$HOME/.config/fish/config.fish" << 'FISHCONF'
+# Pixi global installs (if any)
 fish_add_path -g $HOME/.pixi/bin
+# Local binaries (pip --user, manual installs, etc.)
 fish_add_path -g $HOME/.local/bin
-fish_add_path -g $HOME/.npm-global/bin
 
+# Starship prompt — mise puts it on PATH via conf.d/mise.fish
 if command -q starship
     starship init fish | source
 end
 FISHCONF
 
-exec fish <<'EOF'
+# Install plugins via fisher inside a fish session
+fish -c '
 if not functions -q fisher
     echo "Installing fisher..."
-    curl -sL https://git.io/fisher | source && fisher install jorgebucaran/fisher
+    curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
+    fisher install jorgebucaran/fisher
 end
+
 fisher install edc/bass
 fisher install catppuccin/fish
-echo "y" | fish_config theme save "Catppuccin Macchiato" 2>/dev/null || true
-EOF
+echo "y" | fish_config theme save "Catppuccin Macchiato" 2>/dev/null; or true
+'
