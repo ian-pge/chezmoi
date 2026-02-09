@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
-# config.toml hash: {{ include "dot_config/mise/config.toml.tmpl" | sha256sum }}
-
 set -euo pipefail
-
-# Use mise env (not mise activate) — activate is for interactive shells only
-eval "$(mise env -s bash 2>/dev/null || true)"
 
 # ---- 1. Install Mise (The Tool Manager) ----
 # We need to install the actual binary first!
@@ -15,22 +10,35 @@ if ! command -v mise >/dev/null 2>&1; then
     curl -fsSL https://mise.run | sh
 fi
 
+# Use mise env (not mise activate) — activate is for interactive shells only
+eval "$(mise env -s bash 2>/dev/null || true)"
+
 # ---- 2. Install Tools (Neovim, Node, Starship, etc.) ----
 echo ">>> Installing tools via Mise..."
 
-# NOTE: This script includes the content of config.toml directly.
-# This ensures that we always install exactly what is defined in the template,
-# without relying on chezmoi file placement order.
+# We verify and install tools directly in the script.
+# This serves as the single source of truth for your toolchain.
 
-# Install all tools defined in ~/.config/mise/config.toml
-mise install --yes
+# List of tools to install globally
+TOOLS=(
+    "neovim@latest"
+    "node@lts"
+    "pixi@latest"
+    "starship@latest"
+    "usage@latest"
+)
+
+# Install each tool globally
+for tool in "${TOOLS[@]}"; do
+    echo ">>> Installing $tool..."
+    mise use --global "$tool"
+done
 
 echo ">>> Verifying installation..."
 # Sanity check: verify 'starship' was actually installed and is runnable.
-# If verification fails, retry the install specifically for starship.
-if ! ~/.local/bin/mise exec -- starship --version >/dev/null 2>&1; then
+if ! mise exec -- starship --version >/dev/null 2>&1; then
     echo "WARNING: Starship not found after mise install. Retrying..."
-    mise install starship --yes
+    mise use --global starship@latest
 fi
 
 # Ensure all shims (executable wrappers) are up to date
