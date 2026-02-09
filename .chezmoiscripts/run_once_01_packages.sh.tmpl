@@ -1,116 +1,112 @@
 #!/usr/bin/env bash
 set -euo pipefail
+[ "${DEBUG:-}" = 1 ] && set -x
 
-# Export for current shell
+# ---- 1. Environment ----
 export DEBIAN_FRONTEND=noninteractive
 export APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
-# Pixi needs ~/.local/bin in PATH usually, ensuring it receives it
-export PATH="$HOME/.local/bin:$HOME/.pixi/bin:$PATH"
-TZ="${TZ:-Europe/Paris}"
+export TZ="${TZ:-Europe/Paris}"
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 
-# Use sudo only when needed/available
-SUDO=""
-if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
-  if command -v sudo >/dev/null 2>&1; then
-    SUDO="sudo"
-  else
-    echo "ERROR: Not root and sudo not available." >&2
-    exit 1
-  fi
-fi
-
-# Wrapper to run apt commands non-interactively even with sudo
-run_apt() {
-  $SUDO env DEBIAN_FRONTEND=noninteractive apt-get "$@"
-}
-
-# Ensure basic tools for script execution
-# Minimal set needed for Pixi and basic shell setup
-ensure_basic_deps() {
-    # Pre-seed timezone to avoid tzdata prompt
-    echo "$TZ" | $SUDO tee /etc/timezone >/dev/null || true
-    if [[ -f "/usr/share/zoneinfo/$TZ" ]]; then
-        $SUDO ln -fs "/usr/share/zoneinfo/$TZ" /etc/localtime
-    fi
-
-    # Check for core dependencies before running updates
-    if ! command -v curl >/dev/null 2>&1 || ! command -v tar >/dev/null 2>&1; then
-         run_apt update -qq -y
-         run_apt install -y -qq --no-install-recommends \
-            -o Dpkg::Options::="--force-confnew" \
-            -o Dpkg::Options::="--force-confdef" \
-            ca-certificates curl gnupg tzdata locales tar sudo
-            # gnupg needed for apt key verification sometimes, sudo for priv escal
-    fi
-
-    # Ensure locales are generated to avoid perl warnings
-    if command -v locale-gen >/dev/null 2>&1; then
-        echo 'locales locales/default_environment_locale select en_US.UTF-8' | $SUDO debconf-set-selections
-        echo 'locales locales/locales_to_be_generated select en_US.UTF-8 UTF-8' | $SUDO debconf-set-selections
-        $SUDO locale-gen en_US.UTF-8 >/dev/null 2>&1 || true
+# Privilege helper — works as root or with sudo
+as_root() {
+    if [ "$(id -u)" -eq 0 ]; then
+        "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+    else
+        echo "ERROR: Not root and 'sudo' is not installed." >&2
+        exit 1
     fi
 }
 
-ensure_basic_deps
+echo ">>> Starting Bootstrap for Minimal Image..."
 
-# ---- Install Pixi ----
-if ! command -v pixi >/dev/null 2>&1; then
-    echo "Installing Pixi..."
-    curl -fsSL https://pixi.sh/install.sh | bash
+# ---- 2. System Layer: Core Dependencies ----
+echo ">>> Updating apt & installing core utils..."
+# Enforce no-recommends globally for leaner installs
+echo 'APT::Install-Recommends "false";' | as_root tee /etc/apt/apt.conf.d/99norecommends >/dev/null
+
+as_root apt-get update -qq -y
+as_root apt-get install -y -qq --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    tzdata \
+    locales \
+    git \
+    debconf-utils \
+    passwd \
+    fish
+
+# Rehash so newly installed binaries are found immediately
+hash -r
+
+# Quick sanity check — TLS will fail if the clock is wildly off (common in containers)
+echo ">>> System time: $(date)"
+
+# ---- 3. Locale Generation ----
+# Minimal images often ship with no locale, which breaks Fish/Nvim/etc.
+if [ -f /etc/locale.gen ]; then
+    echo ">>> Generating locales..."
+    echo 'locales locales/default_environment_locale select en_US.UTF-8' | as_root debconf-set-selections
+    echo 'locales locales/locales_to_be_generated select en_US.UTF-8 UTF-8' | as_root debconf-set-selections
+    as_root locale-gen en_US.UTF-8
 fi
 
-# ---- Install Tools via Pixi ----
-# Global install provides binaries in ~/.pixi/bin
-# We specific versions if critical, but generic install implies latest stable at time of run
-# Pixi is fast and resolves deps without system interference
+# ---- 4. Install Mise ----
+mkdir -p "$HOME/.local/bin"
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
 
-install_tool() {
-    local tool="$1"
-    local package="${2:-$1}" # Package name can differ from tool name
-
-    if ! command -v "$tool" >/dev/null 2>&1; then
-        echo "Installing $tool via pixi..."
-        pixi global install "$package"
-    fi
-}
-
-install_tool neovim nvim
-install_tool fish
-install_tool starship
-install_tool fastfetch
-install_tool git
-
-# ---- Configure Shell ----
-
-# Add pixi to path in case it wasn't picked up immediately for this shell session
-export PATH="$HOME/.pixi/bin:$PATH"
-
-# Configured Shell
-# To safely use a user-installed shell as default, we symlink it to a standard system path.
-# This ensures it is available during login even if ~/.pixi/bin isn't in the initial PATH.
-
-FISH_BIN="$HOME/.pixi/bin/fish"
-SYSTEM_FISH="/usr/local/bin/fish"
-
-if [[ -x "$FISH_BIN" ]]; then
-  # Create a system-wide symlink if possible
-  if [[ ! -e "$SYSTEM_FISH" ]]; then
-      $SUDO ln -sf "$FISH_BIN" "$SYSTEM_FISH"
-  fi
-
-  # Add to /etc/shells if missing
-  if ! grep -q "^$SYSTEM_FISH$" /etc/shells; then
-    echo "$SYSTEM_FISH" | $SUDO tee -a /etc/shells >/dev/null
-  fi
-
-  # Change default shell
-  if [[ -w /etc/passwd ]] || command -v chsh >/dev/null 2>&1; then
-      $SUDO chsh -s "$SYSTEM_FISH" "$(whoami)" 2>/dev/null || true
-  fi
+if ! command -v mise >/dev/null 2>&1; then
+    echo ">>> Installing Mise..."
+    curl -fsSL https://mise.run | sh
+    hash -r
 fi
 
-# Cleanup system apt cache to keep image small (if we used apt)
-if [[ -d /var/lib/apt/lists ]]; then
-    run_apt clean
-    $SUDO rm -rf /var/lib/apt/lists/*
+# Use mise env (not mise activate) — activate is for interactive shells only
+eval "$(mise env -s bash 2>/dev/null || true)"
+
+# ---- 5. Install Tools via Mise (parallel) ----
+echo ">>> Installing tools via Mise..."
+mkdir -p "$HOME/.config/mise"
+cat > "$HOME/.config/mise/config.toml" <<'EOF'
+[tools]
+neovim   = "latest"
+node     = "lts"
+pixi     = "latest"
+starship = "latest"
+usage    = "latest"
+fastfetch = "latest"
+EOF
+
+mise install --yes
+# Reload shims so tools are on PATH for remainder of script
+eval "$(mise env -s bash)"
+
+# ---- 6. Configure Shell (Fish) ----
+SYSTEM_FISH=$(command -v fish)
+
+# Ensure Fish is listed in /etc/shells
+grep -qxF "$SYSTEM_FISH" /etc/shells 2>/dev/null \
+    || echo "$SYSTEM_FISH" | as_root tee -a /etc/shells >/dev/null
+
+# Set Fish as default shell (passwd package provides chsh)
+CURRENT_SHELL=$(getent passwd "$(whoami)" | cut -d: -f7)
+if [ "$CURRENT_SHELL" != "$SYSTEM_FISH" ]; then
+    echo ">>> Changing default shell to Fish..."
+    as_root chsh -s "$SYSTEM_FISH" "$(whoami)" 2>/dev/null \
+        || echo "WARNING: chsh failed — update /etc/passwd manually if needed."
 fi
+
+# ---- 7. Hook Mise into Fish ----
+mkdir -p "$HOME/.config/fish/conf.d"
+cat > "$HOME/.config/fish/conf.d/mise.fish" <<EOF
+# Initialize Mise
+if status is-interactive
+    command $HOME/.local/bin/mise activate fish | source
+else
+    command $HOME/.local/bin/mise activate fish --shims | source
+end
+EOF
