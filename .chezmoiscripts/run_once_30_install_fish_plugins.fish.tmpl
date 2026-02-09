@@ -1,0 +1,12 @@
+#!/usr/bin/env fish
+
+# Install plugins via fisher inside a fish session
+if not functions -q fisher
+    echo "Installing fisher..."
+    curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source
+    fisher install jorgebucaran/fisher
+end
+
+fisher install edc/bass
+fisher install catppuccin/fish
+echo "y" | fish_config theme save "Catppuccin Macchiato" 2>/dev/null; or true

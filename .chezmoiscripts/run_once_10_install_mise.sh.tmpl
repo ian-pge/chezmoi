@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ---- Install Mise ----
+mkdir -p "$HOME/.local/bin"
+export PATH="$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+
+if ! command -v mise >/dev/null 2>&1; then
+    echo ">>> Installing Mise..."
+    curl -fsSL https://mise.run | sh
+    # We can't really hash -r here effectively for the parent shell, but it helps this script
+    hash -r
+fi
+
+# Use mise env (not mise activate) — activate is for interactive shells only
+eval "$(mise env -s bash 2>/dev/null || true)"
+
+# ---- Install Tools via Mise ----
+echo ">>> Installing tools via Mise..."
+# The config file is successfully managed by chezmoi at ~/.config/mise/config.toml
+# So we just need to run install.
+
+mise install --yes
+
+echo ">>> Mise tools installed."
