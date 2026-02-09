@@ -9,11 +9,7 @@ if not functions -q fisher
 end
 
 # ---- 2. Install Plugins ----
-# bass: Utility to use Bash scripts in Fish
-fisher install edc/bass
-
-# catppuccin: Theme for Fish
-fisher install catppuccin/fish
+fisher install edc/bass catppuccin/fish
 
 # Apply the theme (silencing output)
 echo "y" | fish_config theme save "Catppuccin Macchiato" 2>/dev/null; or true
