@@ -15,21 +15,7 @@ fi
 # Use mise env (not mise activate) — activate is for interactive shells only
 eval "$(mise env -s bash 2>/dev/null || true)"
 
-# ---- 2. Install Tools (Neovim, Node, Starship, etc.) ----
-echo ">>> Installing tools via Mise..."
 
-# CRITICAL: Create the config file explicitly before installing.
-# This ensures 'mise install' knows WHAT to install (neovim, node, etc.)
-# during the bootstrap process, even if chezmoi hasn't fully applied the dotfiles yet.
-mkdir -p "$HOME/.config/mise"
-cat > "$HOME/.config/mise/config.toml" <<'EOF'
-[tools]
-neovim   = "latest"
-node     = "lts"
-pixi     = "latest"
-starship = "latest"
-usage    = "latest"
-EOF
 
 # Install all tools defined in the config above
 mise install --yes
