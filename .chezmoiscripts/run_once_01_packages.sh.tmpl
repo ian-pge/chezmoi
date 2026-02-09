@@ -43,46 +43,47 @@ as_root apt-get install -y -qq --no-install-recommends \
     debconf-utils \
     passwd
 
-# ---- Fish: install latest from official OBS repo (works on Ubuntu + Debian) ----
-# The default apt repos ship ancient Fish (3.3 on Ubuntu 22.04, 3.6 on Debian 12).
-# Starship and modern Fish features need 3.7+. The fish-shell project maintains
-# packages for all Ubuntu/Debian releases via the OpenSUSE Build Service.
-install_fish_from_obs() {
+# Detect distro early — Ubuntu needs software-properties-common for PPA
+. /etc/os-release
+if [ "$ID" = "ubuntu" ]; then
+    as_root apt-get install -y -qq --no-install-recommends software-properties-common
+fi
+
+# ---- Fish: install latest (PPA for Ubuntu, OBS for Debian) ----
+# Default apt repos ship ancient Fish (3.3 on Ubuntu 22.04, 3.6 on Debian 12).
+# Starship needs 3.7+. Use official fish-shell repos for Fish 4.x.
+install_fish_latest() {
     # shellcheck source=/dev/null
     . /etc/os-release
 
-    local repo_base="https://download.opensuse.org/repositories/shells:/fish:/release:/4"
-    local repo_url keyring_url
-
     case "$ID" in
         ubuntu)
-            repo_url="${repo_base}/xUbuntu_${VERSION_ID}/"
+            # Fish 4.x PPA — official, maintained by the fish-shell team
+            echo ">>> Adding fish-shell 4.x PPA for ${PRETTY_NAME}..."
+            as_root add-apt-repository -y ppa:fish-shell/release-4
             ;;
         debian)
-            repo_url="${repo_base}/Debian_${VERSION_ID}/"
+            # OBS repo — official, maintained by the fish-shell team
+            echo ">>> Adding fish-shell 4.x OBS repo for ${PRETTY_NAME}..."
+            local repo_url="https://download.opensuse.org/repositories/shells:/fish:/release:/4/Debian_${VERSION_ID}/"
+
+            curl -fsSL "${repo_url}Release.key" \
+                | gpg --dearmor \
+                | as_root tee /etc/apt/trusted.gpg.d/shells_fish_release_4.gpg >/dev/null
+
+            echo "deb ${repo_url} /" \
+                | as_root tee /etc/apt/sources.list.d/shells-fish-release-4.list >/dev/null
             ;;
         *)
-            echo "WARNING: Unsupported distro '$ID' for fish OBS repo — falling back to apt default."
-            as_root apt-get install -y -qq --no-install-recommends fish
-            return
+            echo "WARNING: Unsupported distro '$ID' — falling back to apt default fish."
             ;;
     esac
-
-    keyring_url="${repo_url}Release.key"
-
-    echo ">>> Adding fish-shell 4.x OBS repo for ${PRETTY_NAME}..."
-    curl -fsSL "$keyring_url" \
-        | gpg --dearmor \
-        | as_root tee /etc/apt/trusted.gpg.d/shells_fish_release_4.gpg >/dev/null
-
-    echo "deb ${repo_url} /" \
-        | as_root tee /etc/apt/sources.list.d/shells-fish-release-4.list >/dev/null
 
     as_root apt-get update -qq -y
     as_root apt-get install -y -qq --no-install-recommends fish
 }
 
-install_fish_from_obs
+install_fish_latest
 
 # Rehash so newly installed binaries are found immediately
 hash -r
