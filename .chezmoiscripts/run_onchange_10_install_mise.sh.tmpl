@@ -36,13 +36,6 @@ for tool in "${TOOLS[@]}"; do
     mise use --global "$tool"
 done
 
-echo ">>> Verifying installation..."
-# Sanity check: verify 'starship' was actually installed and is runnable.
-if ! mise exec -- starship --version >/dev/null 2>&1; then
-    echo "WARNING: Starship not found after mise install. Retrying..."
-    mise use --global starship@latest
-fi
-
 # Ensure all shims (executable wrappers) are up to date
 echo ">>> Reshimming mise..."
 mise reshim

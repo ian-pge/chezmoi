@@ -31,19 +31,8 @@ if [ "$CURRENT_SHELL" != "$SYSTEM_FISH" ]; then
 fi
 
 # ---- 2. Hook Mise into Fish ----
-# This creates a configuration file in Fish's conf.d directory.
-# It ensures 'mise' is initialized automatically when Fish starts.
-echo ">>> Hooking Mise into Fish..."
-mkdir -p "$HOME/.config/fish/conf.d"
-cat > "$HOME/.config/fish/conf.d/mise.fish" <<EOF
-# Initialize Mise
-if test -x "$HOME/.local/bin/mise"
-    if status is-interactive
-        command $HOME/.local/bin/mise activate fish | source
-    else
-        command $HOME/.local/bin/mise activate fish --shims | source
-    end
-end
-EOF
+# NOTE: The configuration file `~/.config/fish/conf.d/mise.fish` is now managed 
+# declaratively by Chezmoi (via dot_config/fish/conf.d/mise.fish).
+# We no longer need to create it manually here.
 
 echo ">>> Shell configuration complete."
