@@ -30,9 +30,4 @@ if [ "$CURRENT_SHELL" != "$SYSTEM_FISH" ]; then
         || echo "WARNING: chsh failed — you may need to update /etc/passwd manually."
 fi
 
-# ---- 2. Hook Mise into Fish ----
-# NOTE: The configuration file `~/.config/fish/conf.d/mise.fish` is now managed 
-# declaratively by Chezmoi (via dot_config/fish/conf.d/mise.fish).
-# We no longer need to create it manually here.
-
 echo ">>> Shell configuration complete."
