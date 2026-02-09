@@ -51,7 +51,7 @@ install_fish_from_obs() {
     # shellcheck source=/dev/null
     . /etc/os-release
 
-    local repo_base="https://download.opensuse.org/repositories/shells:/fish:/release:/3"
+    local repo_base="https://download.opensuse.org/repositories/shells:/fish:/release:/4"
     local repo_url keyring_url
 
     case "$ID" in
@@ -70,13 +70,13 @@ install_fish_from_obs() {
 
     keyring_url="${repo_url}Release.key"
 
-    echo ">>> Adding fish-shell OBS repo for ${PRETTY_NAME}..."
+    echo ">>> Adding fish-shell 4.x OBS repo for ${PRETTY_NAME}..."
     curl -fsSL "$keyring_url" \
         | gpg --dearmor \
-        | as_root tee /etc/apt/trusted.gpg.d/fish-shell.gpg >/dev/null
+        | as_root tee /etc/apt/trusted.gpg.d/shells_fish_release_4.gpg >/dev/null
 
     echo "deb ${repo_url} /" \
-        | as_root tee /etc/apt/sources.list.d/fish-shell.list >/dev/null
+        | as_root tee /etc/apt/sources.list.d/shells-fish-release-4.list >/dev/null
 
     as_root apt-get update -qq -y
     as_root apt-get install -y -qq --no-install-recommends fish
