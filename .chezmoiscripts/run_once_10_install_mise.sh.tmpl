@@ -17,8 +17,17 @@ eval "$(mise env -s bash 2>/dev/null || true)"
 
 # ---- Install Tools via Mise ----
 echo ">>> Installing tools via Mise..."
-# The config file is successfully managed by chezmoi at ~/.config/mise/config.toml
-# So we just need to run install.
+
+# Explicitly ensure config exists for bootstrap
+mkdir -p "$HOME/.config/mise"
+cat > "$HOME/.config/mise/config.toml" <<'EOF'
+[tools]
+neovim   = "latest"
+node     = "lts"
+pixi     = "latest"
+starship = "latest"
+usage    = "latest"
+EOF
 
 mise install --yes
 

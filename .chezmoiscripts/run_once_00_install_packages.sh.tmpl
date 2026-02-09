@@ -22,6 +22,22 @@ as_root() {
 
 echo ">>> Starting Optimized Bootstrap..."
 
+# ---- 1.5 Locale Generation (Early) ----
+# Fix locale warnings during subsequent installs
+if [ -f /etc/locale.gen ]; then
+    if ! grep -q "^en_US.UTF-8 UTF-8" /etc/locale.gen; then
+        echo ">>> Generating locales..."
+        # Install locales package if missing (minimal images)
+        if ! dpkg -s locales >/dev/null 2>&1; then
+             as_root apt-get update -qq
+             as_root apt-get install -y -qq --no-install-recommends locales
+        fi
+        echo 'locales locales/default_environment_locale select en_US.UTF-8' | as_root debconf-set-selections
+        echo 'locales locales/locales_to_be_generated select en_US.UTF-8 UTF-8' | as_root debconf-set-selections
+        as_root locale-gen en_US.UTF-8
+    fi
+fi
+
 # ---- 2. Prepare Repositories (Fish) ----
 # We do this FIRST to consolidate apt-get update/install calls.
 
@@ -100,14 +116,5 @@ fi
 
 as_root apt-get install -y -qq --no-install-recommends "${PACKAGES[@]}"
 
-# ---- 4. Locale Generation ----
-if [ -f /etc/locale.gen ]; then
-    if ! grep -q "^en_US.UTF-8 UTF-8" /etc/locale.gen; then
-        echo ">>> Generating locales..."
-        echo 'locales locales/default_environment_locale select en_US.UTF-8' | as_root debconf-set-selections
-        echo 'locales locales/locales_to_be_generated select en_US.UTF-8 UTF-8' | as_root debconf-set-selections
-        as_root locale-gen en_US.UTF-8
-    fi
-fi
 
 echo ">>> System packages ready."
