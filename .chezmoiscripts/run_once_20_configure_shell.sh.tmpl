@@ -37,10 +37,12 @@ echo ">>> Hooking Mise into Fish..."
 mkdir -p "$HOME/.config/fish/conf.d"
 cat > "$HOME/.config/fish/conf.d/mise.fish" <<EOF
 # Initialize Mise
-if status is-interactive
-    command $HOME/.local/bin/mise activate fish | source
-else
-    command $HOME/.local/bin/mise activate fish --shims | source
+if test -x "$HOME/.local/bin/mise"
+    if status is-interactive
+        command $HOME/.local/bin/mise activate fish | source
+    else
+        command $HOME/.local/bin/mise activate fish --shims | source
+    end
 end
 EOF
 

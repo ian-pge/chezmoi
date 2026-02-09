@@ -9,9 +9,9 @@ eval "$(mise env -s bash 2>/dev/null || true)"
 # ---- 2. Install Tools (Neovim, Node, Starship, etc.) ----
 echo ">>> Installing tools via Mise..."
 
-# NOTE: This script runs AFTER files have been updated (run_onchange_after_).
-# Therefore, ~/.config/mise/config.toml already exists and has the correct content.
-# We don't need to manually create it.
+# NOTE: This script includes the content of config.toml directly.
+# This ensures that we always install exactly what is defined in the template,
+# without relying on chezmoi file placement order.
 
 # Install all tools defined in ~/.config/mise/config.toml
 mise install --yes
