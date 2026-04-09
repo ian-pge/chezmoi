@@ -54,10 +54,13 @@ if [ "$ID" = "ubuntu" ]; then
     # Check if PPA is already added
     if ! grep -q "^deb .*fish-shell/release-4" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null; then
         echo ">>> Adding fish-shell 4.x PPA..."
-        if ! command -v add-apt-repository >/dev/null 2>&1; then
+        
+        # FIX: Ensure software-properties-common AND gpg tools are installed first
+        if ! command -v add-apt-repository >/dev/null 2>&1 || ! command -v gpg-agent >/dev/null 2>&1; then
              as_root apt-get update -qq
-             as_root apt-get install -y -qq --no-install-recommends software-properties-common
+             as_root apt-get install -y -qq --no-install-recommends software-properties-common gnupg gpg-agent dirmngr
         fi
+        
         as_root add-apt-repository -y ppa:fish-shell/release-4
         
         # PPA addition triggers an update automatically on modern Ubuntu
