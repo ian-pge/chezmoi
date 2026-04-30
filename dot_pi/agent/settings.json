@@ -1,0 +1,17 @@
+{
+  "lastChangelogVersion": "0.70.6",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.5",
+  "defaultThinkingLevel": "xhigh",
+  "theme": "catppuccin-macchiato",
+  "showHardwareCursor": false,
+  "packages": [
+    "npm:@sherif-fanous/pi-catppuccin",
+    "npm:pi-animations",
+    "npm:@burneikis/pi-vim",
+    "npm:pi-web-access"
+  ],
+  "terminal": {
+    "showTerminalProgress": true
+  }
+}
