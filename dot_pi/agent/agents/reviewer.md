@@ -1,6 +1,7 @@
 ---
 name: reviewer
 description: Code review specialist for quality and security analysis
+model: openai-codex/gpt-5.5:xhigh
 tools: read, grep, find, ls, bash
 ---
 
