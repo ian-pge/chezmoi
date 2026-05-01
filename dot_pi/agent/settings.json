@@ -9,7 +9,8 @@
     "npm:@sherif-fanous/pi-catppuccin",
     "npm:pi-animations",
     "npm:@burneikis/pi-vim",
-    "npm:pi-web-access"
+    "npm:pi-web-access",
+    "npm:pi-mermaid"
   ],
   "terminal": {
     "showTerminalProgress": true
