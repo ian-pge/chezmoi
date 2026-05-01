@@ -1,0 +1,8 @@
+{
+  "workingAnim": "crush",
+  "thinkingAnim": "typewriter",
+  "toolAnim": "icon-morph",
+  "width": "full",
+  "randomMode": false,
+  "enabled": true
+}
