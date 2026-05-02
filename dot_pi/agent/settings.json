@@ -10,7 +10,8 @@
     "npm:pi-animations",
     "npm:@burneikis/pi-vim",
     "npm:pi-web-access",
-    "npm:pi-mermaid"
+    "npm:pi-mermaid",
+    "npm:pi-tool-display"
   ],
   "terminal": {
     "showTerminalProgress": false
