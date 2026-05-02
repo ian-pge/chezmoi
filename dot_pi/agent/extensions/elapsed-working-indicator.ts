@@ -1,19 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent";
 
-const RESET = "\x1b[0m";
-const CATPPUCCIN_MACCHIATO_YELLOW = "\x1b[38;2;238;212;159m";
 const ELAPSED_WIDGET_KEY = "elapsed-working-indicator:last-answer";
-const PATCHED_KEY = "__elapsedWorkingIndicatorPatched";
-
-function firstForegroundColor(text: string | undefined): string | undefined {
-	if (!text) return undefined;
-
-	return (
-		text.match(/\x1b\[[0-9;]*38;2;\d+;\d+;\d+m/)?.[0] ??
-		text.match(/\x1b\[[0-9;]*38;5;\d+m/)?.[0] ??
-		text.match(/\x1b\[[0-9;]*(?:3[0-7]|9[0-7])m/)?.[0]
-	);
-}
 
 function formatElapsed(ms: number): string {
 	const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -26,15 +13,18 @@ function formatElapsed(ms: number): string {
 	return `${seconds}s`;
 }
 
-function setElapsedIndicator(ui: ExtensionContext["ui"], elapsedMs: number, color?: string): void {
-	const text = formatElapsed(elapsedMs);
+function formatElapsedForDisplay(ui: ExtensionContext["ui"], elapsedMs: number): string {
+	return ui.theme.fg("warning", formatElapsed(elapsedMs));
+}
+
+function setElapsedIndicator(ui: ExtensionContext["ui"], elapsedMs: number): void {
 	ui.setWorkingIndicator({
-		frames: [color ? `${color}${text}${RESET}` : ui.theme.fg("accent", text)],
+		frames: [formatElapsedForDisplay(ui, elapsedMs)],
 	});
 }
 
 function setElapsedWidget(ui: ExtensionContext["ui"], elapsedMs: number): void {
-	ui.setWidget(ELAPSED_WIDGET_KEY, [`${CATPPUCCIN_MACCHIATO_YELLOW}${formatElapsed(elapsedMs)}${RESET}`], {
+	ui.setWidget(ELAPSED_WIDGET_KEY, [formatElapsedForDisplay(ui, elapsedMs)], {
 		placement: "aboveEditor",
 	});
 }
@@ -44,11 +34,10 @@ export default function (pi: ExtensionAPI) {
 	let lastAnswerElapsedMs = 0;
 	let interval: ReturnType<typeof setInterval> | undefined;
 	let latestUi: ExtensionContext["ui"] | undefined;
-	let latestColor: string | undefined;
 
 	const render = () => {
 		if (!latestUi || activeAnswerStart === null) return;
-		setElapsedIndicator(latestUi, Date.now() - activeAnswerStart, latestColor);
+		setElapsedIndicator(latestUi, Date.now() - activeAnswerStart);
 	};
 
 	const stopTimer = () => {
@@ -58,30 +47,14 @@ export default function (pi: ExtensionAPI) {
 		}
 	};
 
-	function patchWorkingMessage(ctx: ExtensionContext): void {
-		const ui = ctx.ui as ExtensionContext["ui"] & Record<string, unknown>;
-		if (ui[PATCHED_KEY]) return;
-		ui[PATCHED_KEY] = true;
-
-		const originalSetWorkingMessage = ui.setWorkingMessage.bind(ui);
-
-		ui.setWorkingMessage = (message?: string) => {
-			latestColor = firstForegroundColor(message) ?? latestColor;
-			originalSetWorkingMessage(message);
-			render();
-		};
-	}
-
 	pi.on("session_start", async (_event, ctx) => {
 		latestUi = ctx.ui;
-		patchWorkingMessage(ctx);
 		ctx.ui.setWidget(ELAPSED_WIDGET_KEY, undefined);
 		ctx.ui.setWorkingIndicator();
 	});
 
 	pi.on("agent_start", async (_event, ctx) => {
 		latestUi = ctx.ui;
-		patchWorkingMessage(ctx);
 		ctx.ui.setWidget(ELAPSED_WIDGET_KEY, undefined);
 		activeAnswerStart = Date.now();
 		lastAnswerElapsedMs = 0;

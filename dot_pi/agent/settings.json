@@ -13,6 +13,6 @@
     "npm:pi-mermaid"
   ],
   "terminal": {
-    "showTerminalProgress": true
+    "showTerminalProgress": false
   }
 }
