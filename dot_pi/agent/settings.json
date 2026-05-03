@@ -17,5 +17,21 @@
   ],
   "terminal": {
     "showTerminalProgress": false
+  },
+  "subagents": {
+    "agentOverrides": {
+      "oracle": {
+        "thinking": "xhigh"
+      },
+      "planner": {
+        "thinking": "xhigh"
+      },
+      "reviewer": {
+        "thinking": "xhigh"
+      },
+      "worker": {
+        "thinking": "xhigh"
+      }
+    }
   }
 }
