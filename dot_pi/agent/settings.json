@@ -1,17 +1,19 @@
 {
-  "lastChangelogVersion": "0.70.6",
+  "lastChangelogVersion": "0.72.1",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
-  "defaultThinkingLevel": "xhigh",
+  "defaultThinkingLevel": "off",
   "theme": "catppuccin-macchiato",
   "showHardwareCursor": false,
   "packages": [
     "npm:@sherif-fanous/pi-catppuccin",
     "npm:pi-animations",
     "npm:@burneikis/pi-vim",
-    "npm:pi-web-access",
     "npm:pi-mermaid",
-    "npm:pi-tool-display"
+    "npm:visual-explainer",
+    "npm:pi-web-access",
+    "npm:pi-subagents",
+    "npm:pi-intercom"
   ],
   "terminal": {
     "showTerminalProgress": false
