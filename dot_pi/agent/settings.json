@@ -8,12 +8,14 @@
   "packages": [
     "npm:@sherif-fanous/pi-catppuccin",
     "npm:pi-animations",
-    "npm:@burneikis/pi-vim",
     "npm:pi-mermaid",
     "npm:visual-explainer",
     "npm:pi-web-access",
     "npm:pi-subagents",
-    "npm:pi-intercom"
+    "npm:pi-intercom",
+    "npm:pi-boomerang",
+    "npm:@burneikis/pi-vim",
+    "npm:pi-rewind-hook"
   ],
   "terminal": {
     "showTerminalProgress": false
