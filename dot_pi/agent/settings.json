@@ -35,5 +35,6 @@
         "thinking": "xhigh"
       }
     }
-  }
+  },
+  "quietStartup": true
 }
