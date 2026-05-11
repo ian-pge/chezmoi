@@ -7,9 +7,15 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { execFileSync } from "node:child_process";
 
-function getKrabbySprite(): string[] {
+const ANSI_PATTERN = /\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|_[^\x07]*(?:\x07|\x1b\\))/g;
+
+function stripAnsi(text: string): string {
+	return text.replace(ANSI_PATTERN, "");
+}
+
+function getKrabbySprite(): { name: string; lines: string[] } {
 	try {
-		return execFileSync("krabby", ["random", "--no-variant"], {
+		const lines = execFileSync("krabby", ["random", "--no-variant"], {
 			encoding: "utf8",
 			timeout: 1500,
 			env: {
@@ -20,20 +26,27 @@ function getKrabbySprite(): string[] {
 		})
 			.trimEnd()
 			.split("\n");
+
+		const name = stripAnsi(lines[0] ?? "").trim();
+		return { name, lines };
 	} catch {
-		return [];
+		return { name: "", lines: [] };
 	}
 }
 
 export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		if (ctx.hasUI) {
-			const krabbyLines = getKrabbySprite();
+			const pokemon = getKrabbySprite();
+
+			if (pokemon.name) {
+				ctx.ui.setTitle(pokemon.name);
+			}
 
 			ctx.ui.setHeader(() => {
 				return {
 					render(_width: number): string[] {
-						return krabbyLines;
+						return pokemon.lines;
 					},
 					invalidate() {},
 				};
