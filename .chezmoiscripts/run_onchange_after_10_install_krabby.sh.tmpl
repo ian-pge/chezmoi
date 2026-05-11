@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Install krabby from source with the mise-managed Rust toolchain.
+# This avoids upstream .deb GLIBC compatibility issues on older Ubuntu/Debian.
+
+export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.local/share/mise/shims:$PATH"
+
+eval "$(mise env -s bash 2>/dev/null || true)"
+
+if command -v krabby >/dev/null 2>&1 && krabby random --no-variant >/dev/null 2>&1; then
+    echo ">>> krabby already installed and working."
+    exit 0
+fi
+
+# Remove the prebuilt .deb if it exists but is broken due to GLIBC mismatch.
+if dpkg -s krabby >/dev/null 2>&1; then
+    echo ">>> Removing incompatible krabby .deb..."
+    if [ "$(id -u)" -eq 0 ]; then
+        dpkg -r krabby
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo dpkg -r krabby
+    fi
+fi
+
+echo ">>> Installing krabby via cargo..."
+mise install rust --yes
+mise exec rust -- cargo install krabby --locked
+
+mise reshim || true
+krabby random --no-variant >/dev/null
+krabby --version || true
