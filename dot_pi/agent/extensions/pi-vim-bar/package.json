@@ -1,0 +1,43 @@
+{
+  "name": "pi-vim-bar-local",
+  "version": "1.4.0-bar.1",
+  "description": "Local fork of @burneikis/pi-vim with a bar-style cursor in insert mode",
+  "license": "MIT",
+  "author": "burneikis",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/burneikis/pi-vim.git"
+  },
+  "keywords": [
+    "pi-package"
+  ],
+  "files": [
+    "index.ts",
+    "keys.ts",
+    "motions.ts",
+    "operators.ts",
+    "registers.ts",
+    "repeat.ts",
+    "search.ts",
+    "state.ts",
+    "text-objects.ts",
+    "vim-editor.ts",
+    "modes/",
+    "README.md"
+  ],
+  "exports": {
+    ".": "./index.ts"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "optionalDependencies": {
+    "@burneikis/pi-fzfp": "^2.1.0"
+  }
+}
