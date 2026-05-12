@@ -2,7 +2,7 @@
   "lastChangelogVersion": "0.74.0",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
-  "defaultThinkingLevel": "off",
+  "defaultThinkingLevel": "low",
   "theme": "catppuccin-macchiato",
   "showHardwareCursor": false,
   "packages": [
@@ -14,7 +14,8 @@
     "npm:pi-subagents",
     "npm:pi-intercom",
     "npm:pi-boomerang",
-    "npm:pi-rewind-hook"
+    "npm:pi-rewind-hook",
+    "npm:pi-tool-display"
   ],
   "terminal": {
     "showTerminalProgress": false
