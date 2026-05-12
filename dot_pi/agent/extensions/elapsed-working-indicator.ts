@@ -23,12 +23,6 @@ function setElapsedWidget(ui: ExtensionContext["ui"], elapsedMs: number): void {
 	});
 }
 
-function setDotWorkingIndicator(ui: ExtensionContext["ui"]): void {
-	ui.setWorkingIndicator({
-		frames: [ui.theme.fg("accent", "●")],
-	});
-}
-
 export default function (pi: ExtensionAPI) {
 	let activeAnswerStart: number | null = null;
 	let lastAnswerElapsedMs = 0;
@@ -50,12 +44,12 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		latestUi = ctx.ui;
 		ctx.ui.setWidget(ELAPSED_WIDGET_KEY, undefined);
-		setDotWorkingIndicator(ctx.ui);
+		ctx.ui.setWorkingIndicator();
 	});
 
 	pi.on("agent_start", async (_event, ctx) => {
 		latestUi = ctx.ui;
-		setDotWorkingIndicator(ctx.ui);
+		ctx.ui.setWorkingIndicator();
 		activeAnswerStart = Date.now();
 		lastAnswerElapsedMs = 0;
 		render();
@@ -71,7 +65,7 @@ export default function (pi: ExtensionAPI) {
 		}
 		stopTimer();
 		if (latestUi) {
-			setDotWorkingIndicator(latestUi);
+			latestUi.setWorkingIndicator();
 			setElapsedWidget(latestUi, lastAnswerElapsedMs);
 		}
 	});
