@@ -17,15 +17,15 @@ function formatElapsedForDisplay(ui: ExtensionContext["ui"], elapsedMs: number):
 	return ui.theme.fg("warning", formatElapsed(elapsedMs));
 }
 
-function setElapsedIndicator(ui: ExtensionContext["ui"], elapsedMs: number): void {
-	ui.setWorkingIndicator({
-		frames: [formatElapsedForDisplay(ui, elapsedMs)],
-	});
-}
-
 function setElapsedWidget(ui: ExtensionContext["ui"], elapsedMs: number): void {
 	ui.setWidget(ELAPSED_WIDGET_KEY, [formatElapsedForDisplay(ui, elapsedMs)], {
 		placement: "aboveEditor",
+	});
+}
+
+function setDotWorkingIndicator(ui: ExtensionContext["ui"]): void {
+	ui.setWorkingIndicator({
+		frames: [ui.theme.fg("accent", "●")],
 	});
 }
 
@@ -37,7 +37,7 @@ export default function (pi: ExtensionAPI) {
 
 	const render = () => {
 		if (!latestUi || activeAnswerStart === null) return;
-		setElapsedIndicator(latestUi, Date.now() - activeAnswerStart);
+		setElapsedWidget(latestUi, Date.now() - activeAnswerStart);
 	};
 
 	const stopTimer = () => {
@@ -50,12 +50,12 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		latestUi = ctx.ui;
 		ctx.ui.setWidget(ELAPSED_WIDGET_KEY, undefined);
-		ctx.ui.setWorkingIndicator();
+		setDotWorkingIndicator(ctx.ui);
 	});
 
 	pi.on("agent_start", async (_event, ctx) => {
 		latestUi = ctx.ui;
-		ctx.ui.setWidget(ELAPSED_WIDGET_KEY, undefined);
+		setDotWorkingIndicator(ctx.ui);
 		activeAnswerStart = Date.now();
 		lastAnswerElapsedMs = 0;
 		render();
@@ -71,7 +71,7 @@ export default function (pi: ExtensionAPI) {
 		}
 		stopTimer();
 		if (latestUi) {
-			latestUi.setWorkingIndicator();
+			setDotWorkingIndicator(latestUi);
 			setElapsedWidget(latestUi, lastAnswerElapsedMs);
 		}
 	});
