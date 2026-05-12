@@ -44,12 +44,10 @@ export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		latestUi = ctx.ui;
 		ctx.ui.setWidget(ELAPSED_WIDGET_KEY, undefined);
-		ctx.ui.setWorkingIndicator();
 	});
 
 	pi.on("agent_start", async (_event, ctx) => {
 		latestUi = ctx.ui;
-		ctx.ui.setWorkingIndicator();
 		activeAnswerStart = Date.now();
 		lastAnswerElapsedMs = 0;
 		render();
@@ -65,7 +63,6 @@ export default function (pi: ExtensionAPI) {
 		}
 		stopTimer();
 		if (latestUi) {
-			latestUi.setWorkingIndicator();
 			setElapsedWidget(latestUi, lastAnswerElapsedMs);
 		}
 	});
