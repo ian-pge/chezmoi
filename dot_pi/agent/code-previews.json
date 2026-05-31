@@ -22,12 +22,6 @@
   "secretWarnings": true,
   "pathIcons": "nerd",
   "tools": [
-    "bash",
-    "read",
-    "write",
-    "edit",
-    "grep",
-    "find",
-    "ls"
+    "bash"
   ]
 }
