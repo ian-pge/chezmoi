@@ -79,7 +79,7 @@ function getRawFrames(config: Config): string[] {
 	return getFrameConfig(config.frames).frames;
 }
 
-const CATPPUCCIN_MACCHIATO_ROSEWATER = "#f5bde6";
+const CATPPUCCIN_MACCHIATO_PINK = "#f5bde6";
 
 function colorHex(hex: string, text: string): string {
 	const [r, g, b] = hexToRgb(hex);
@@ -87,7 +87,7 @@ function colorHex(hex: string, text: string): string {
 }
 
 function colorizeFrames(frames: string[], _ctx: ExtensionContext): string[] {
-	return frames.map((f) => (f ? colorHex(CATPPUCCIN_MACCHIATO_ROSEWATER, f) : f));
+	return frames.map((f) => (f ? colorHex(CATPPUCCIN_MACCHIATO_PINK, f) : f));
 }
 
 function buildVerbList(config: Config): string[] {
@@ -150,7 +150,7 @@ function lightenRgb(r: number, g: number, b: number, amount: number): [number, n
 
 /** Extract hex color from current theme by parsing ctx.ui.theme.fg() output */
 function getThemeAccentHex(_ctx: ExtensionContext): string | null {
-	return CATPPUCCIN_MACCHIATO_ROSEWATER;
+	return CATPPUCCIN_MACCHIATO_PINK;
 }
 
 /** Per-character ANSI color sweep — moving highlight across verb text */
@@ -219,7 +219,7 @@ export default function (pi: ExtensionAPI) {
 		if (!currentCtx || !currentVerbText) return;
 		// Pause shimmer when agent is idle (e.g. waiting for sub-agent)
 		if (currentCtx.isIdle()) return;
-		const baseHex = CATPPUCCIN_MACCHIATO_ROSEWATER;
+		const baseHex = CATPPUCCIN_MACCHIATO_PINK;
 		const shimmerHex = "#ffffff";
 		const colored = colorSweep(currentVerbText, shimmerFrame, baseHex, shimmerHex);
 		currentCtx.ui.setWorkingMessage(colored);
@@ -303,7 +303,7 @@ export default function (pi: ExtensionAPI) {
 		cancelCompletionVerb();
 		const verb = randomItem(COMPLETION_VERBS);
 		const check = ctx.ui.theme.fg("success", "✓");
-		const word = colorHex(CATPPUCCIN_MACCHIATO_ROSEWATER, verb);
+		const word = colorHex(CATPPUCCIN_MACCHIATO_PINK, verb);
 		ctx.ui.setStatus("spinner", `${check} ${word}`);
 
 		completionTimer = setTimeout(() => {

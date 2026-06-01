@@ -2,7 +2,7 @@
   "lastChangelogVersion": "0.78.0",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
-  "defaultThinkingLevel": "minimal",
+  "defaultThinkingLevel": "medium",
   "theme": "catppuccin-macchiato",
   "showHardwareCursor": false,
   "packages": [
@@ -12,7 +12,8 @@
     "npm:pi-web-access",
     "npm:pi-subagents",
     "npm:pi-intercom",
-    "npm:pi-boomerang"
+    "npm:pi-boomerang",
+    "npm:pi-interactive-shell"
   ],
   "terminal": {
     "showTerminalProgress": false
