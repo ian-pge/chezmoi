@@ -2,7 +2,7 @@
   "lastChangelogVersion": "0.78.0",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
-  "defaultThinkingLevel": "medium",
+  "defaultThinkingLevel": "minimal",
   "theme": "catppuccin-macchiato",
   "showHardwareCursor": false,
   "packages": [
