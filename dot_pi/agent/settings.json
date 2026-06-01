@@ -2,19 +2,17 @@
   "lastChangelogVersion": "0.78.0",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.5",
-  "defaultThinkingLevel": "minimal",
+  "defaultThinkingLevel": "off",
   "theme": "catppuccin-macchiato",
   "showHardwareCursor": false,
   "packages": [
     "npm:@sherif-fanous/pi-catppuccin",
-    "npm:pi-animations",
     "npm:pi-mermaid",
     "npm:visual-explainer",
     "npm:pi-web-access",
     "npm:pi-subagents",
     "npm:pi-intercom",
-    "npm:pi-boomerang",
-    "npm:pi-rewind-hook"
+    "npm:pi-boomerang"
   ],
   "terminal": {
     "showTerminalProgress": false
