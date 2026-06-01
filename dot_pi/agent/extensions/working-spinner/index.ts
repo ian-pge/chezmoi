@@ -54,7 +54,7 @@ const DEFAULT_CONFIG: Config = {
 	frameIntervalMs: 150,
 	verbs: "claude",
 	verbRotationIntervalMs: 3000,
-	showCompletionVerb: true,
+	showCompletionVerb: false,
 	completionVerbDurationMs: 2000,
 };
 
