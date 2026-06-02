@@ -80,10 +80,22 @@ function getRawFrames(config: Config): string[] {
 }
 
 const CATPPUCCIN_MACCHIATO_PINK = "#f5bde6";
+const ELAPSED_WIDGET_KEY = "working-spinner:final-elapsed";
 
 function colorHex(hex: string, text: string): string {
 	const [r, g, b] = hexToRgb(hex);
 	return `\x1b[38;2;${r};${g};${b}m${text}\x1b[0m`;
+}
+
+function formatElapsed(ms: number): string {
+	const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+	const hours = Math.floor(totalSeconds / 3600);
+	const minutes = Math.floor((totalSeconds % 3600) / 60);
+	const seconds = totalSeconds % 60;
+
+	if (hours > 0) return `${hours}h${minutes.toString().padStart(2, "0")}m`;
+	if (minutes > 0) return `${minutes}m${seconds.toString().padStart(2, "0")}s`;
+	return `${seconds}s`;
 }
 
 function colorizeFrames(frames: string[], _ctx: ExtensionContext): string[] {
@@ -190,6 +202,7 @@ export default function (pi: ExtensionAPI) {
 	let shimmerTimer: ReturnType<typeof setInterval> | null = null;
 	let shimmerFrame = 0;
 	let currentVerbText = "";
+	let activeAnswerStart: number | null = null;
 	let accentHex: string | null = null;
 	let shimmerHex: string | null = null;
 
@@ -222,7 +235,8 @@ export default function (pi: ExtensionAPI) {
 		const baseHex = CATPPUCCIN_MACCHIATO_PINK;
 		const shimmerHex = "#ffffff";
 		const colored = colorSweep(currentVerbText, shimmerFrame, baseHex, shimmerHex);
-		currentCtx.ui.setWorkingMessage(colored);
+		const elapsed = activeAnswerStart === null ? "" : ` ${currentCtx.ui.theme.fg("dim", formatElapsed(Date.now() - activeAnswerStart))}`;
+		currentCtx.ui.setWorkingMessage(`${colored}${elapsed}`);
 		shimmerFrame += 2;
 	}
 
@@ -334,6 +348,8 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("agent_start", async (_event, ctx) => {
 		hookCtx(ctx);
+		ctx.ui.setWidget(ELAPSED_WIDGET_KEY, undefined);
+		activeAnswerStart = Date.now();
 		cancelCompletionVerb();
 
 		config = readConfig(ctx.cwd);
@@ -348,13 +364,22 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("agent_end", async (_event, ctx) => {
 		hookCtx(ctx);
+		const finalElapsed = activeAnswerStart === null ? null : Date.now() - activeAnswerStart;
+		activeAnswerStart = null;
 		stopVerbRotation();
 		showCompletionVerb(ctx);
 		ctx.ui.setWorkingMessage(undefined);
+		ctx.ui.setWidget(
+			ELAPSED_WIDGET_KEY,
+			finalElapsed === null ? undefined : [colorHex(CATPPUCCIN_MACCHIATO_PINK, formatElapsed(finalElapsed))],
+			{ placement: "aboveEditor" },
+		);
 	});
 
 	pi.on("session_shutdown", async () => {
 		isExtensionActive = false;
+		activeAnswerStart = null;
+		if (currentCtx) currentCtx.ui.setWidget(ELAPSED_WIDGET_KEY, undefined);
 		currentCtx = null;
 		stopVerbRotation();
 		cancelCompletionVerb();
