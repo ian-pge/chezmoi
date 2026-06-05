@@ -15,15 +15,16 @@
  *   /verbs add <v1,...>         Append custom verbs
  *   /verbs replace <...>        Replace verb list entirely
  *
- * ─── Settings ─────────────────────────────────────────────────────
- *   .pi/settings.json → workingSpinner key
+ * ─── Configuration ────────────────────────────────────────────────
+ *   Edit DEFAULT_CONFIG below to customize defaults. Slash-command
+ *   changes are runtime-only and reset when the extension reloads.
  *
  * Installation:
  *   Place in .pi/extensions/working-spinner/ and restart pi.
  */
 
 import type { AutocompleteItem } from "@earendil-works/pi-tui";
-import type { ExtensionAPI, ExtensionContext, WorkingIndicatorOptions } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
 	FRAME_PRESETS,
 	VERB_PRESETS,
@@ -58,18 +59,6 @@ const DEFAULT_CONFIG: Config = {
 	completionVerbDurationMs: 2000,
 };
 
-// ─── Hard-coded config ────────────────────────────────────────────
-// This local extension intentionally does not read or write any
-// .pi/settings.json file. Change DEFAULT_CONFIG above to customize it.
-
-function readConfig(_cwd: string): Config {
-	return { ...DEFAULT_CONFIG };
-}
-
-function writeConfig(_cwd: string, _config: Config): void {
-	// Settings are intentionally not persisted. Edit DEFAULT_CONFIG instead.
-}
-
 // ─── Build indicator options from config ──────────────────────────
 
 function getRawFrames(config: Config): string[] {
@@ -80,7 +69,6 @@ function getRawFrames(config: Config): string[] {
 }
 
 const CATPPUCCIN_MACCHIATO_PINK = "#f5bde6";
-const ELAPSED_WIDGET_KEY = "working-spinner:final-elapsed";
 
 function colorHex(hex: string, text: string): string {
 	const [r, g, b] = hexToRgb(hex);
@@ -152,19 +140,6 @@ function blendColors(
 	];
 }
 
-function lightenRgb(r: number, g: number, b: number, amount: number): [number, number, number] {
-	return [
-		Math.min(255, Math.round(r + (255 - r) * amount)),
-		Math.min(255, Math.round(g + (255 - g) * amount)),
-		Math.min(255, Math.round(b + (255 - b) * amount)),
-	];
-}
-
-/** Extract hex color from current theme by parsing ctx.ui.theme.fg() output */
-function getThemeAccentHex(_ctx: ExtensionContext): string | null {
-	return CATPPUCCIN_MACCHIATO_PINK;
-}
-
 /** Per-character ANSI color sweep — moving highlight across verb text */
 function colorSweep(
 	text: string,
@@ -203,8 +178,6 @@ export default function (pi: ExtensionAPI) {
 	let shimmerFrame = 0;
 	let currentVerbText = "";
 	let activeAnswerStart: number | null = null;
-	let accentHex: string | null = null;
-	let shimmerHex: string | null = null;
 
 	// Keep a fresh ctx reference (updated on each event) for the interval callback
 	let currentCtx: ExtensionContext | null = null;
@@ -214,19 +187,6 @@ export default function (pi: ExtensionAPI) {
 	let isExtensionActive = true;
 
 	// ── Shimmer ────────────────────────────────────────────────
-
-	function resolveShimmerColors(ctx: ExtensionContext) {
-		const hex = getThemeAccentHex(ctx);
-		if (hex) {
-			accentHex = hex;
-			const [r, g, b] = hexToRgb(hex);
-			const lightened = lightenRgb(r, g, b, 0.5);
-			shimmerHex = `#${lightened[0].toString(16).padStart(2, "0")}${lightened[1].toString(16).padStart(2, "0")}${lightened[2].toString(16).padStart(2, "0")}`;
-		} else {
-			accentHex = null;
-			shimmerHex = null;
-		}
-	}
 
 	function updateShimmer() {
 		if (!currentCtx || !currentVerbText) return;
@@ -243,7 +203,6 @@ export default function (pi: ExtensionAPI) {
 	function startShimmer(ctx: ExtensionContext) {
 		stopShimmer();
 		currentCtx = ctx;
-		resolveShimmerColors(ctx);
 		shimmerFrame = 0;
 		if (currentVerbText) updateShimmer();
 		shimmerTimer = setInterval(updateShimmer, SHIMMER_INTERVAL_MS);
@@ -262,7 +221,6 @@ export default function (pi: ExtensionAPI) {
 		const raw = getRawFrames(config);
 		const colored = colorizeFrames(raw, ctx);
 		ctx.ui.setWorkingIndicator({ frames: colored, intervalMs: config.frameIntervalMs });
-		resolveShimmerColors(ctx);
 	}
 
 	function pickVerb(): string {
@@ -335,7 +293,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event, ctx) => {
 		hookCtx(ctx);
-		config = readConfig(ctx.cwd);
+		config = { ...DEFAULT_CONFIG };
 		currentVerbList = buildVerbList(config);
 		isExtensionActive = true;
 		cancelCompletionVerb();
@@ -348,11 +306,9 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("agent_start", async (_event, ctx) => {
 		hookCtx(ctx);
-		ctx.ui.setWidget(ELAPSED_WIDGET_KEY, undefined);
 		activeAnswerStart = Date.now();
 		cancelCompletionVerb();
 
-		config = readConfig(ctx.cwd);
 		applyIndicator(ctx);
 		startVerbRotation(ctx);
 	});
@@ -364,22 +320,15 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("agent_end", async (_event, ctx) => {
 		hookCtx(ctx);
-		const finalElapsed = activeAnswerStart === null ? null : Date.now() - activeAnswerStart;
 		activeAnswerStart = null;
 		stopVerbRotation();
 		showCompletionVerb(ctx);
 		ctx.ui.setWorkingMessage(undefined);
-		ctx.ui.setWidget(
-			ELAPSED_WIDGET_KEY,
-			finalElapsed === null ? undefined : [colorHex(CATPPUCCIN_MACCHIATO_PINK, formatElapsed(finalElapsed))],
-			{ placement: "aboveEditor" },
-		);
 	});
 
 	pi.on("session_shutdown", async () => {
 		isExtensionActive = false;
 		activeAnswerStart = null;
-		if (currentCtx) currentCtx.ui.setWidget(ELAPSED_WIDGET_KEY, undefined);
 		currentCtx = null;
 		stopVerbRotation();
 		cancelCompletionVerb();
@@ -430,7 +379,6 @@ export default function (pi: ExtensionAPI) {
 				config.frames = "custom";
 				config.customFrames = frameList;
 				applyIndicator(ctx);
-				writeConfig(ctx.cwd, config);
 				ctx.ui.notify(`Custom frames set: ${formatFrames(frameList)}`, "success");
 				return;
 			}
@@ -443,7 +391,6 @@ export default function (pi: ExtensionAPI) {
 				}
 				config.frameIntervalMs = n;
 				applyIndicator(ctx);
-				writeConfig(ctx.cwd, config);
 				ctx.ui.notify(`Frame interval set to ${n}ms`, "success");
 				return;
 			}
@@ -455,7 +402,6 @@ export default function (pi: ExtensionAPI) {
 				config.frames = match;
 				config.frameIntervalMs = FRAME_PRESETS[match].intervalMs;
 				applyIndicator(ctx);
-				writeConfig(ctx.cwd, config);
 				const label = match === "none" ? "hidden" : match;
 				ctx.ui.notify(`Spinner frames: ${label}`, "success");
 				return;
@@ -513,7 +459,6 @@ export default function (pi: ExtensionAPI) {
 				const current = buildVerbList(config);
 				config.verbs = "custom";
 				config.customVerbList = [...current, ...extra];
-				writeConfig(ctx.cwd, config);
 				ctx.ui.notify(`Appended ${extra.length} verbs (total: ${config.customVerbList.length})`, "success");
 				return;
 			}
@@ -526,7 +471,6 @@ export default function (pi: ExtensionAPI) {
 				}
 				config.verbs = "custom";
 				config.customVerbList = list;
-				writeConfig(ctx.cwd, config);
 				ctx.ui.notify(`Replaced with ${list.length} custom verbs`, "success");
 				return;
 			}
@@ -536,7 +480,6 @@ export default function (pi: ExtensionAPI) {
 			if (match) {
 				config.verbs = match;
 				delete config.customVerbList;
-				writeConfig(ctx.cwd, config);
 				const count = VERB_PRESETS[match].length;
 				const label = match === "none" ? "no verb rotation" : `${match} (${count} verbs)`;
 				ctx.ui.notify(`Verb preset: ${label}`, "success");

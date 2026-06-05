@@ -209,7 +209,7 @@ export default function localCodexUsage(pi: ExtensionAPI) {
 			return;
 		}
 
-		ctx.ui.setStatus(STATUS_KEY, "checking");
+		ctx.ui.setStatus(STATUS_KEY, lightGrayStatusline(ctx, "checking"));
 		const result = await queryUsage(ctx, { timeoutMs: DEFAULT_TIMEOUT_MS });
 		if (requestId !== statuslineRequestId) return;
 		if (!isOpenAICodexModel(ctx.model)) {
@@ -255,7 +255,7 @@ export default function localCodexUsage(pi: ExtensionAPI) {
 			}
 
 			let keepStatusline = false;
-			if (options.value.statusline) ctx.ui.setStatus(STATUS_KEY, "checking");
+			if (options.value.statusline) ctx.ui.setStatus(STATUS_KEY, lightGrayStatusline(ctx, "checking"));
 			try {
 				const result = await queryUsage(ctx, options.value);
 				if (!result.ok) {
@@ -837,6 +837,10 @@ export function formatCodexUsageStatusline(
 	if (snapshot.secondary) parts.push(`${formatRemainingPercent(snapshot.secondary)} wk`);
 	if (parts.length === 1 && snapshot.credits) parts.push(formatCredits(snapshot.credits));
 	return parts.join(" ");
+}
+
+function lightGrayStatusline(ctx: ExtensionContext, text: string): string {
+	return ctx.ui.theme.fg("dim", text);
 }
 
 function colorCodexUsageStatusline(
