@@ -5,7 +5,7 @@ right_format = "$cmd_duration"                                 # Right prompt su
 
 # ─── Left prompt ───────────────────────────────────────────────────────────────
 format = """
-$os $username@$hostname $directory $git_branch$line_break$character
+$os $custom $username@$hostname $directory $git_branch$line_break$character
 """
 
 # 1 • Current local time (always visible) ---------------------------------------
@@ -21,6 +21,13 @@ disabled = false
 style    = "fg:sky"
 format   = "[$symbol]($style)"
 symbols  = { NixOS = "", Ubuntu = "", Arch = "", Fedora = "", Debian = "" }
+
+# tmux indicator -----------------------------------------------------------------
+[custom.tmux]
+when    = 'test -n "$TMUX"'
+command = 'echo "󰆍"'
+style   = "fg:pink"
+format  = "[$output]($style) "
 
 # 3 • user@host ------------------------------------------------------------------
 [username]
