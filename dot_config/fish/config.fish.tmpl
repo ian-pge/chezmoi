@@ -16,7 +16,9 @@ fish_add_path ~/.pixi/bin
 # Disable the default greeting ("Welcome to fish...")
 set fish_greeting
 
-# Enable truecolor support for better terminal colors
+# Enable UTF-8 / truecolor support for tmux, icons, and colors
+set -gx LANG C.utf8
+set -gx LC_CTYPE C.utf8
 set -gx COLORTERM truecolor
 
 # Vim keybindings emulation
