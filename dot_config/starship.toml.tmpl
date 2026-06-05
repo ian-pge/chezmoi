@@ -1,11 +1,11 @@
 "$schema" = 'https://starship.rs/config-schema.json'           # Validation :contentReference[oaicite:7]{index=7}
 add_newline = false
 palette      = "catppuccin"                                    # Custom palette :contentReference[oaicite:8]{index=8}
-right_format = "${custom.tmux}$cmd_duration"                    # Right prompt support :contentReference[oaicite:9]{index=9}
+right_format = "$cmd_duration"                                 # Right prompt support :contentReference[oaicite:9]{index=9}
 
 # ─── Left prompt ───────────────────────────────────────────────────────────────
 format = """
-$os $username@$hostname $directory $git_branch$line_break$character
+$os $username@$hostname $directory $git_branch$fill${custom.tmux}$line_break$character
 """
 
 # 1 • Current local time (always visible) ---------------------------------------
@@ -28,6 +28,9 @@ when    = 'test -n "$TMUX"'
 command = 'tmux display-message -p "#S"'
 style   = "fg:lavender"
 format  = "[󰆍 $output]($style) "
+
+[fill]
+symbol = " "
 
 # 3 • user@host ------------------------------------------------------------------
 [username]
