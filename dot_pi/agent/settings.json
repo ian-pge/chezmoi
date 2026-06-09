@@ -13,7 +13,8 @@
     "npm:pi-subagents",
     "npm:pi-intercom",
     "npm:pi-boomerang",
-    "npm:pi-interactive-shell"
+    "npm:pi-interactive-shell",
+    "npm:pi-codex-goal"
   ],
   "terminal": {
     "showTerminalProgress": false
